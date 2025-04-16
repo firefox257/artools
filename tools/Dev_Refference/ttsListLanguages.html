@@ -1,0 +1,104 @@
+<!DOCTYPE html>
+<html>
+<head>
+<title>TTS with Language Selection</title>
+<style>
+  body {
+    font-family: sans-serif;
+  }
+  .container {
+    width: 400px;
+    margin: 20px auto;
+  }
+  label {
+    display: block;
+    margin-bottom: 5px;
+  }
+  select, input[type="text"], button {
+    width: 100%;
+    padding: 10px;
+    margin-bottom: 10px;
+    box-sizing: border-box;
+  }
+  button {
+    cursor: pointer;
+  }
+</style>
+</head>
+<body>
+  <div class="container">
+    <label for="language">Select Language:</label>
+    <select id="language">
+      <option value="">-- Select --</option>
+      <option value="en">English</option>
+      <option value="en-GB">British English</option>
+      <option value="en-AU">Australian English</option>
+      <option value="en-IN">Indian English</option>
+      <option value="en-IE">Irish English</option>
+    </select>
+
+    <label for="voice">Select Voice:</label>
+    <select id="voice">
+      <option value="">-- Select --</option>
+    </select>
+
+    <label for="textToSpeak">Text to Speak:</label>
+    <input type="text" id="textToSpeak" placeholder="Enter text here">
+
+    <button id="playButton">Speak</button>
+  </div>
+
+  <script>
+    const languageDropdown = document.getElementById('language');
+    const voiceDropdown = document.getElementById('voice');
+    const textToSpeakInput = document.getElementById('textToSpeak');
+    const playButton = document.getElementById('playButton');
+
+    let voices = [];
+
+    function populateVoiceList() {
+      voices = window.speechSynthesis.getVoices();
+      voiceDropdown.innerHTML = '<option value="">-- Select --</option>';
+
+      const selectedLanguage = languageDropdown.value;
+
+      voices.forEach(voice => {
+        if (selectedLanguage === '' || voice.lang.startsWith(selectedLanguage)) {
+          const option = document.createElement('option');
+          option.textContent = `${voice.name} (${voice.lang})`;
+          option.value = voice.name;
+          voiceDropdown.appendChild(option);
+        }
+      });
+    }
+
+    // Some browsers might not have loaded voices by default.
+    if (speechSynthesis.onvoiceschanged !== undefined) {
+      speechSynthesis.onvoiceschanged = populateVoiceList;
+    }
+
+    // Initial population of voices (might be empty initially)
+    populateVoiceList();
+
+    languageDropdown.addEventListener('change', populateVoiceList);
+
+    playButton.addEventListener('click', () => {
+      const text = textToSpeakInput.value.trim();
+      if (text) {
+        const selectedVoiceName = voiceDropdown.value;
+        const utterance = new SpeechSynthesisUtterance(text);
+
+        voices.forEach(voice => {
+          if (voice.name === selectedVoiceName) {
+            utterance.voice = voice;
+          }
+        });
+
+        speechSynthesis.speak(utterance);
+      } else {
+        alert('Please enter text to speak.');
+      }
+    });
+  </script>
+</body>
+</html>

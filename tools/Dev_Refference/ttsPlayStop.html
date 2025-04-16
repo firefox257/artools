@@ -1,0 +1,108 @@
+<!DOCTYPE html>
+<html>
+<head>
+<title>Text to Speech</title>
+<style>
+  body {
+    font-family: sans-serif;
+  }
+  #controls {
+    margin-bottom: 20px;
+  }
+  textarea {
+    width: 100%;
+    height: 100px;
+    margin-bottom: 10px;
+  }
+</style>
+</head>
+<body>
+
+  <h1>Text to Speech</h1>
+
+  <div id="controls">
+    <label for="voice">Select Voice:</label>
+    <select id="voice"></select>
+    <br><br>
+    <textarea id="textToSpeak" placeholder="Enter text here...">
+	
+	Crafting stories is like building worlds with words. It begins with a spark – an intriguing character, a puzzling situation, or a vivid image. From this seed, a narrative unfolds, guided by choices that shape the plot, develop the characters, and build tension. The writer weaves together threads of dialogue, action, and description, aiming to evoke emotion and create a meaningful connection with the reader. Ultimately, the goal is to leave an imprint, to offer a glimpse into another perspective, or to simply entertain with a well-told tale.
+
+	
+	
+	</textarea>
+    <br>
+    <button id="playButton">Play</button>
+    <button id="stopButton" disabled>Stop</button>
+  </div>
+
+  <script>
+    const voiceSelect = document.getElementById('voice');
+    const textInput = document.getElementById('textToSpeak');
+    const playButton = document.getElementById('playButton');
+    const stopButton = document.getElementById('stopButton');
+    let speechUtterance = null;
+
+    function populateVoiceList() {
+      const voices = window.speechSynthesis.getVoices();
+      voiceSelect.innerHTML = ''; // Clear previous options
+
+      voices.forEach(voice => {
+        const option = document.createElement('option');
+        option.textContent = `${voice.name} (${voice.lang})`;
+        option.value = voice.name;
+        voiceSelect.appendChild(option);
+      });
+    }
+
+    // Initial population of voices
+    populateVoiceList();
+
+    // Update voices if they change (some browsers might load them asynchronously)
+    if (speechSynthesis.onvoiceschanged !== undefined) {
+      speechSynthesis.onvoiceschanged = populateVoiceList;
+    }
+
+    playButton.addEventListener('click', () => {
+      if (speechSynthesis.speaking) {
+        return; // Don't start a new utterance if one is already in progress
+      }
+
+      const selectedVoiceName = voiceSelect.value;
+      const selectedVoice = window.speechSynthesis.getVoices().find(voice => voice.name === selectedVoiceName);
+      const text = textInput.value.trim();
+
+      if (text) {
+        speechUtterance = new SpeechSynthesisUtterance(text);
+        speechUtterance.voice = selectedVoice;
+        speechSynthesis.speak(speechUtterance);
+
+        playButton.disabled = true;
+        stopButton.disabled = false;
+      }
+    });
+
+    stopButton.addEventListener('click', () => {
+      window.speechSynthesis.cancel();
+      playButton.disabled = false;
+      stopButton.disabled = true;
+    });
+
+    speechSynthesis.addEventListener('end', () => {
+      playButton.disabled = false;
+      stopButton.disabled = true;
+    });
+
+    speechSynthesis.addEventListener('pause', () => {
+      playButton.disabled = false;
+      stopButton.disabled = false; // You might want to change this based on desired behavior
+    });
+
+    speechSynthesis.addEventListener('resume', () => {
+      playButton.disabled = true;
+      stopButton.disabled = false;
+    });
+  </script>
+
+</body>
+</html>

@@ -1,0 +1,71 @@
+<!DOCTYPE html>
+<html>
+<head>
+<title>TTS Voice Demo</title>
+<style>
+  body {
+    font-family: sans-serif;
+  }
+  #controls {
+    margin-bottom: 15px;
+  }
+  textarea {
+    width: 100%;
+    height: 80px;
+    margin-bottom: 10px;
+  }
+</style>
+</head>
+<body>
+
+  <h1>Text-to-Speech Demo</h1>
+
+  <div id="controls">
+    <label for="voiceSelect">Select Voice:</label>
+    <select id="voiceSelect"></select><br><br>
+    <label for="textToSpeak">Enter Text:</label><br>
+    <textarea id="textToSpeak"></textarea><br>
+    <button id="playButton">Speak</button>
+  </div>
+
+  <script>
+    const voiceSelect = document.getElementById('voiceSelect');
+    const textToSpeak = document.getElementById('textToSpeak');
+    const playButton = document.getElementById('playButton');
+    const speechSynthesis = window.speechSynthesis;
+    let voices = [];
+
+    function populateVoiceList() {
+      voices = speechSynthesis.getVoices();
+      voiceSelect.innerHTML = '';
+      voices.forEach((voice, index) => {
+        const option = document.createElement('option');
+        option.value = index;
+        option.textContent = `${voice.name} (${voice.lang})`;
+        voiceSelect.appendChild(option);
+      });
+    }
+
+    // Some browsers might not have voices available immediately,
+    // so we listen for the voiceschanged event.
+    speechSynthesis.addEventListener('voiceschanged', populateVoiceList);
+    populateVoiceList(); // Initial population in case voices are already available
+
+    playButton.addEventListener('click', () => {
+      if (speechSynthesis.speaking) {
+        return;
+      }
+      const selectedVoiceIndex = voiceSelect.value;
+      if (selectedVoiceIndex === null || selectedVoiceIndex === undefined) {
+        alert("Please select a voice.");
+        return;
+      }
+      const utterThis = new SpeechSynthesisUtterance(textToSpeak.value);
+      utterThis.voice = voices[selectedVoiceIndex];
+
+      speechSynthesis.speak(utterThis);
+    });
+  </script>
+
+</body>
+</html>

@@ -1,0 +1,9 @@
+{
+    "imports": {
+        "three": "./threejs/build/three.module.js",
+        "three/addons/": "./threejs/examples/jsm/",
+		"globals": "./js/globals.js",
+		
+		"try1": "./js/try1.js"
+    }
+}

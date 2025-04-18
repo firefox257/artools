@@ -1,0 +1,22 @@
+
+
+- is on
+* is done
+? is stuck
+
+
+create sandbox-
+/*
+
+
+*/
+	mobile  orbital
+	mobile first person
+	mobile webxr orbital
+	mobile webxr first person
+	quest 3 ar view orbital
+	quest 3 ar first person
+
+world/terran
+	
+

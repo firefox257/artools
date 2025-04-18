@@ -1,6 +1,5 @@
 
-
-
+<!--codenis here-->
 <!DOCTYPE html>
 <html lang="en">
     <head>
@@ -65,19 +64,25 @@
                 this.renderer = new THREE.WebGLRenderer({ antialias: true })
                 this.renderer.setPixelRatio(window.devicePixelRatio)
                 this.renderer.setSize(window.innerWidth, window.innerHeight)
-                this.renderer.setAnimationLoop(this.animate)
+                
                 this.renderer.shadowMap.enabled = true
                 this.renderer.shadowMap.type = THREE.PCFSoftShadowMap
                 document.body.appendChild(this.renderer.domElement)
                 this.renderer.render(this.scene, this.camera)
                 //*/
+				
+				this.#setupAnimated()
             } //end constructor
 
-            animate() {
-                const t = window.performance.now() + 9000
-                console.log('here ' + t)
+            #setupAnimate() {
+				var self = this;
+				self.renderer.setAnimationLoop(()=> {
+					const t = window.performance.now() + 9000
+                	console.log('here ' + t)
 
-                this.renderer.render(this.scene, this.camera)
+                	self.renderer.render(self.scene, self.camera)
+				});
+                
             }
         } //end World class
 

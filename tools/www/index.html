@@ -68,13 +68,13 @@
                 this.renderer.shadowMap.enabled = true
                 this.renderer.shadowMap.type = THREE.PCFSoftShadowMap
                 document.body.appendChild(this.renderer.domElement)
-                this.renderer.render(this.scene, this.camera)
+                //this.renderer.render(this.scene, this.camera)
                 //*/
 				
 				this.#setupAnimated()
             } //end constructor
 
-            #setupAnimate() {
+            #setupAnimated() {
 				var self = this;
 				self.renderer.setAnimationLoop(()=> {
 					const t = window.performance.now() + 9000

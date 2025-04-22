@@ -115,4 +115,11 @@ globalThis.deepClone= (source, visited = new WeakMap()) => {
 
     return copy
 }
+
+ function funcrtID() {
+	 return funcrtID.atid++;
+ }
+funcrtID.atid=-1;
+globalThis.rtID= funcrtID
+
 //*/

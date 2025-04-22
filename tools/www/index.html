@@ -1,4 +1,3 @@
-
 <!--codenis here-->
 <!DOCTYPE html>
 <html lang="en">
@@ -7,19 +6,23 @@
         <meta name="viewport" content="width=device-width, initial-scale=1.0" />
         <title>Game make</title>
         <style>
-            canvas {
-                border: 1px solid #0f0;
+            .full {
+                position: absolute;
+                top: 0;
+                left: 0;
+                bottom: 0;
             }
         </style>
     </head>
     <script type="importmap" src="importmap.json"></script>
-    <body>
-        
-    </body>
+    <body></body>
     <script type="module">
         import * as THREE from 'three'
         import 'globals'
-
+		
+		
+		
+		
         class World {
             scene
             camera
@@ -27,6 +30,8 @@
 
             ambient
             directionalLight
+			
+			#animatedList=[]
 
             constructor() {
                 const self = this
@@ -51,42 +56,137 @@
                 this.scene.add(this.directionalLight)
 
                 this.camera = new THREE.PerspectiveCamera(
-                    75,
+                    45,
                     window.innerWidth / window.innerHeight,
                     0.1,
                     1000
                 )
-                this.camera.position
-                    .set(-1, 1, 1)
-                    .normalize()
-                    .multiplyScalar(10)
+                this.camera.position.set(0, 0, 5)
+                //.set(-1, 1, 1)
+                //.normalize()
+                //.multiplyScalar(10)
 
                 this.renderer = new THREE.WebGLRenderer({ antialias: true })
                 this.renderer.setPixelRatio(window.devicePixelRatio)
                 this.renderer.setSize(window.innerWidth, window.innerHeight)
-                
+
                 this.renderer.shadowMap.enabled = true
                 this.renderer.shadowMap.type = THREE.PCFSoftShadowMap
                 document.body.appendChild(this.renderer.domElement)
                 //this.renderer.render(this.scene, this.camera)
                 //*/
-				
-				this.#setupAnimated()
+
+                this.#setupAnimated()
             } //end constructor
+			add(obj) {
+				if(obj.isAnimated()) {
+					this.#animatedList.push(obj)
+				}
+				this.scene.add(obj.mesh)
+			}
 
             #setupAnimated() {
-				var self = this;
-				self.renderer.setAnimationLoop(()=> {
-					const t = window.performance.now() + 9000
-                	console.log('here ' + t)
+                var self = this
+                self.renderer.setAnimationLoop(() => {
+                    const t = window.performance.now() + 9000
+                    // console.log('here ' + t)
+					var l = this.#animatedList
+					for(var i = 0; i < l.length; i++) {
+						l[i].animate(t)
+					}
+					
 
-                	self.renderer.render(self.scene, self.camera)
-				});
-                
+                    self.renderer.render(self.scene, self.camera)
+                })
             }
         } //end World class
 
         globalThis.$w = new World()
+
+        class wobj {
+            constructor() {
+				
+			}
+
+            isObj() {
+                return false
+            }
+            isAnimated() {
+                return false
+            }
+            isClickable() {
+                return false
+            }
+            isDragable() {
+                return false
+            }
+
+            hasGravity() {
+                return false
+            }
+            clickDistance() {
+                return 0.0
+            }
+            defaultScale() {
+                return [1.0, 1.0, 1.0]
+            }
+            defaultTranslate() {
+                return [0.0, 0.0, 0.0]
+            }
+            defaultRotate() {
+                return [0.0, 0.0, 0.0]
+            }
+			
+			animate(time) {
+				
+			}
+        } //end wobj
+
+        class box extends wobj {
+            mesh
+			#lastTime
+            constructor(x, y, z) {
+                super()
+                this.mesh = new THREE.Mesh(box.geo, box.mat)
+
+                this.mesh.position.set(x, y, z)
+                $w.add(this)
+            }
+            isObj() {
+                return true
+            }
+			isAnimated() {
+				return true
+			}
+			animate(time) {
+				
+				var t;
+				if(!this.#lastTime) {
+					t= 0
+				} else {
+					t=time-this.#lastTime
+					
+				}
+				this.#lastTime=time
+				
+				this.mesh.rotation.x+=(Math.PI*2) * (t/10000)
+			}
+        } // end box
+		
+        {
+            box.geo = new THREE.BoxGeometry(1, 1, 1)
+            box.mat = new THREE.MeshStandardMaterial({
+                color: 0xffffff,
+                metalness: 0.7,
+                roughness: 0.01,
+                bumpScale: 0.1
+            })
+
+            //new THREE.MeshBasicMaterial({color:0x00ff00})
+        }
+
+        var b = new box(0, 0, 0)
+        var b1 = new box(1, 1, 0)
 
         //const scene = new THREE.Scene();
 

@@ -125,16 +125,14 @@
             return d * (PXPMM * 0.3528)
         }
 
-        function EventsBase() {}
-        dclass(EventsBase, {
+        function OnChangeEvent() {}
+        dclass(OnChangeEvent, [], {
             prototype: {
-                _redrawRequest: false,
-
                 _onChangeObserver: [],
                 subscribeOnChange: function (f) {
                     this._onChangeObserver.push(f)
                 },
-                _triggerOnChange: function () {
+                triggerOnChange: function () {
                     var c = this._onChangeObserver
                     for (var i = 0; i < c.length; i++) {
                         c[i]()
@@ -150,103 +148,99 @@
                 }
             }
         }
-        dclass(
-            Style,
-            {
-                prototype: {
-                    _padding: [0, 0, 0, 0],
-                    get padding() {
-                        return this._padding.slice()
-                    },
-                    set padding(d) {
-                        var changed = false
-                        for (var i = 0; i < 4; i++) {
-                            if (d[i] != undefined) {
-                                if (this._padding[i] != d[i]) {
-                                    this._padding[i] = d[i]
-                                    changed = true
-                                }
-                            }
-                        }
-                        if (changes) {
-                            this._triggerOnChange()
-                        }
-                    }, //end set padding
-
-                    _expand: [false, false, false, false],
-                    get expand() {
-                        return this._expand.slice()
-                    },
-                    set expand(d) {
-                        var changed = false
-                        for (var i = 0; i < 4; i++) {
-                            if (d[i] != undefined) {
-                                if (this._expand[i] != d[i]) {
-                                    this._expand[i] = d[i]
-                                    changed = true
-                                }
-                            }
-                        }
-                        if (changed) {
-                            this._triggerOnChange()
-                        }
-                    }, //end set expand
-
-                    _size: [,],
-                    get size() {
-                        return this._size.slice()
-                    },
-                    set size(d) {
-                        var changed = false
-                        for (var i = 0; i < 4; i++) {
-                            if (this._size[i] != d[i]) {
-                                this._size[i] = d[i]
+        dclass(Style, [OnChangeEvent], {
+            prototype: {
+                _padding: [0, 0, 0, 0],
+                get padding() {
+                    return this._padding.slice()
+                },
+                set padding(d) {
+                    var changed = false
+                    for (var i = 0; i < 4; i++) {
+                        if (d[i] != undefined) {
+                            if (this._padding[i] != d[i]) {
+                                this._padding[i] = d[i]
                                 changed = true
                             }
                         }
-                        if (changed) {
-                            this._triggerOnChange()
-                        }
-                    }, //end size
+                    }
+                    if (changes) {
+                        this.triggerOnChange()
+                    }
+                }, //end set padding
 
-                    _maxSize: [,],
-                    get maxSize() {
-                        return this._maxSize.slice()
-                    },
-                    set maxSize(d) {
-                        var changed = false
-                        for (var i = 0; i < 4; i++) {
-                            if (this._maxSize[i] != d[i]) {
-                                this._maxSize[i] = d[i]
+                _expand: [false, false, false, false],
+                get expand() {
+                    return this._expand.slice()
+                },
+                set expand(d) {
+                    var changed = false
+                    for (var i = 0; i < 4; i++) {
+                        if (d[i] != undefined) {
+                            if (this._expand[i] != d[i]) {
+                                this._expand[i] = d[i]
                                 changed = true
                             }
                         }
-                        if (changes) {
-                            this._triggerOnChange()
-                        }
-                    }, //end maxSize
+                    }
+                    if (changed) {
+                        this.triggerOnChange()
+                    }
+                }, //end set expand
 
-                    _minSize: [,],
-                    get minSize() {
-                        return this._minSize.slice()
-                    },
-                    set minSize(d) {
-                        var changed = false
-                        for (var i = 0; i < 4; i++) {
-                            if (this._minSize[i] != d[i]) {
-                                this._minSize[i] = d[i]
-                                changed = true
-                            }
+                _size: [,],
+                get size() {
+                    return this._size.slice()
+                },
+                set size(d) {
+                    var changed = false
+                    for (var i = 0; i < 4; i++) {
+                        if (this._size[i] != d[i]) {
+                            this._size[i] = d[i]
+                            changed = true
                         }
-                        if (changed) {
-                            this._triggerOnChange()
+                    }
+                    if (changed) {
+                        this.triggerOnChange()
+                    }
+                }, //end size
+
+                _maxSize: [,],
+                get maxSize() {
+                    return this._maxSize.slice()
+                },
+                set maxSize(d) {
+                    var changed = false
+                    for (var i = 0; i < 4; i++) {
+                        if (this._maxSize[i] != d[i]) {
+                            this._maxSize[i] = d[i]
+                            changed = true
                         }
-                    } //end maxSize
-                } //end prototype
-            },
-            EventsBase
-        ) //end style
-        
+                    }
+                    if (changes) {
+                        this.triggerOnChange()
+                    }
+                }, //end maxSize
+
+                _minSize: [,],
+                get minSize() {
+                    return this._minSize.slice()
+                },
+                set minSize(d) {
+                    var changed = false
+                    for (var i = 0; i < 4; i++) {
+                        if (this._minSize[i] != d[i]) {
+                            this._minSize[i] = d[i]
+                            changed = true
+                        }
+                    }
+                    if (changed) {
+                        this.triggerOnChange()
+                    }
+                } //end maxSize
+            } //end prototype
+        }) //end style
+
         /*
 
 

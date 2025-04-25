@@ -3,7 +3,7 @@
         "three": "./threejs/build/three.module.js",
         "three/addons/": "./threejs/examples/jsm/",
 		"globals": "./js/globals.js",
-		"sharedUtils": "./sharedjs/util.js"
+		"sharedUtils": "./sharedjs/utils.js"
 		
 		
     }

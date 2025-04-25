@@ -1,8 +1,4 @@
-
-
-
-
-globalThis.deepSet = function(target, source) {
+globalThis.deepSet = function (target, source) {
     if (target === source) {
         return
     }
@@ -34,7 +30,6 @@ globalThis.deepSet = function(target, source) {
                     // Recursively call deepSet for nested objects/arrays
                     deepSet(targetValue, sourceValue)
                 } else {
-                 
                     try {
                         target[key] = sourceValue
                     } catch (e) {
@@ -63,17 +58,10 @@ globalThis.deepSet = function(target, source) {
     return target
 }
 
-globalThis.dclass = function(dc, def, ...sources) {
-    deepSet(dc, def)
+globalThis.dclass = function (dc, sources, def) {
     sources.forEach((source) => {
         dc.prototype[source.name + 'Super'] = source
         deepSet(dc, source)
     })
+    deepSet(dc, def)
 }
-
-
-
-
-
-
-

@@ -1,4 +1,7 @@
-function deepClone(source, visited = new WeakMap()) {
+
+
+
+globalThis.deepClone= function (source, visited = new WeakMap()) {
     if (source === null || typeof source !== 'object') {
         return source
     }
@@ -61,4 +64,3 @@ function deepClone(source, visited = new WeakMap()) {
 }
 
 
-return deepClone;

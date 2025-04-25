@@ -1,4 +1,3 @@
-
 ///////
 
 
@@ -54,7 +53,7 @@ globalThis.$msgc = (() => {
     return o
 })()
 
-globalThis.deepClone= (source, visited = new WeakMap()) => {
+globalThis.deepClone = (source, visited = new WeakMap()) => {
     if (source === null || typeof source !== 'object') {
         return source
     }
@@ -116,10 +115,43 @@ globalThis.deepClone= (source, visited = new WeakMap()) => {
     return copy
 }
 
- function funcrtID() {
-	 return funcrtID.atid++;
- }
-funcrtID.atid=-1;
-globalThis.rtID= funcrtID
+function funcrtID() {
+    return funcrtID.atid++
+}
+funcrtID.atid = -1
+globalThis.rtID = funcrtID
+
+
+globalThis.isInt =function (value) {
+    return typeof value === 'number' && Number.isInteger(value)
+}
+
+
+
+globalThis.isFloat = function (value) {
+    return (
+        typeof value === 'number' &&
+        !Number.isInteger(value) &&
+        Number.isFinite(value)
+    )
+}
+
+
+globalThis.isBool = function(value) {
+    return typeof value === 'boolean'
+}
+
+
+globalThis.isString = function(value) {
+    return typeof value === 'string'
+}
+
+
+globalThis.isChar =function(value) {
+    return typeof value === 'string' && value.length === 1
+}
 
 //*/
+
+
+console.log("end")

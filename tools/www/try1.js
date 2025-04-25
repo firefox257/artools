@@ -1,26 +1,6 @@
 
 
-class wobj {
-	
-	constructor() {
-		console.log("wobj")
-		console.log("is animated " + this.isAnimated())
-	}
-	isAnimated = () => false
-}
+var v= [1, , 2]
 
-
-class try1 extends wobj {
-	constructor() {
-		super()
-		console.log("try1")
-		console.log("is animated " + this.isAnimated())
-	} 
-	isAnimated=()=> true
-}
-
-var t = new try1()
-console.log(t.isAnimated())
-
-//*/
-console.log("end")
+console.log(v)
+if(v[1]== undefined) console.log("here")

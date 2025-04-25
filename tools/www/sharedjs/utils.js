@@ -1,4 +1,4 @@
-globalThis.deepSet = function (target, source) {
+globalThis.deepSet = function (target, source, def) {
     if (target === source) {
         return
     }
@@ -7,7 +7,7 @@ globalThis.deepSet = function (target, source) {
     const keys = Reflect.ownKeys(source)
 
     for (const key of keys) {
-        if (key === 'constructors') continue
+        
         const descriptor = Object.getOwnPropertyDescriptor(source, key)
 
         // If the property has a getter or setter, define it on the target
@@ -17,7 +17,8 @@ globalThis.deepSet = function (target, source) {
             // If it's a data property (including functions)
             const sourceValue = descriptor.value
             const targetValue = target[key]
-
+			var defValue;
+			if(def) defValue=def[key]
             // Check if both source and target values are objects (but not null)
             if (
                 typeof sourceValue === 'object' &&
@@ -28,8 +29,13 @@ globalThis.deepSet = function (target, source) {
                 // Check if both are arrays or both are plain objects
                 if (Array.isArray(sourceValue) === Array.isArray(targetValue)) {
                     // Recursively call deepSet for nested objects/arrays
-                    deepSet(targetValue, sourceValue)
+					
+                    deepSet(targetValue, sourceValue, defValue)
                 } else {
+					if(defValue!=undefined) {
+						//alert("found " +key)
+						continue;
+					}
                     try {
                         target[key] = sourceValue
                     } catch (e) {
@@ -42,7 +48,11 @@ globalThis.deepSet = function (target, source) {
                 }
             } else {
                 // Otherwise, directly assign the value
-                try {
+                if(defValue != undefined) {
+					//alert("found " +key)
+					continue
+				}
+				try {
                     target[key] = sourceValue
                 } catch (e) {
                     // Handle potential errors if the target property is not writable
@@ -61,7 +71,9 @@ globalThis.deepSet = function (target, source) {
 globalThis.dclass = function (dc, sources, def) {
     sources.forEach((source) => {
         dc.prototype[source.name + 'Super'] = source
-        deepSet(dc, source)
+        deepSet(dc, source, def)
     })
     deepSet(dc, def)
 }
+
+globalThis.$$ =(0,eval)

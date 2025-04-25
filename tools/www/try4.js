@@ -1,139 +1,133 @@
-/**
- * Merges multiple class prototypes into a new class prototype and chains their constructors.
- * Note: This is a simplified implementation and has limitations compared to true multiple inheritance
- * or mixin patterns provided by libraries or future JavaScript features.
- * Property conflicts on the prototype are resolved by the order of classes provided (last one wins).
- * Constructor arguments are passed to all merged constructors.
- *
- * @param {...Function} classes - The class constructors to merge.
- * @returns {Function} A new class constructor with merged prototypes and chained constructors.
- */
-function mergeClasses(...classes) {
-    // Create a dummy class
-    class MergedClass {
-        constructor(...args) {
-            // Run each argument class constructor
-            classes.forEach((Class) => {
-                // Ensure it's a function before calling (should be a class/constructor)
-                if (typeof Class === 'function') {
-                    // Call the constructor with the current instance ('this') and arguments
-                    Class.apply(this, args)
-                }
-            })
-        }
+function cloneFunction(func) {
+    if (typeof func !== 'function') {
+        throw new Error('Input must be a function.')
     }
 
-    // Copy properties from each argument class prototype into the dummy class prototype
-    classes.forEach((Class) => {
-        // Ensure it's a function and has a prototype
-        if (typeof Class === 'function' && Class.prototype) {
-            const propertyNames = Object.getOwnPropertyNames(Class.prototype)
+    // Get the source code of the function
+    const funcSource = func.toString()
 
-            propertyNames.forEach((name) => {
-                // Avoid copying the constructor itself, as we handle it separately
-                if (name === 'constructor') {
-                    return
-                }
+    // Create a new function from the source code.
+    // Note: This new function runs in the global scope and does not preserve closures.
+    let clonedFunc
+    try {
+        // Extract parameter names and body for the Function constructor
+        const match = funcSource.match(
+            /^function(?:\s+\w+)?\s*\(([^)]*)\)\s*\{([\s\S]*)\}$/
+        )
+        if (match) {
+            const params = match[1]
+                .split(',')
+                .map((p) => p.trim())
+                .filter((p) => p)
+            const body = match[2].trim()
+            clonedFunc = new Function(...params, body)
+        } else {
+            // Handle arrow functions or other syntaxes if necessary, or throw an error
+            // For simplicity, this example primarily targets standard function declarations/expressions
+            // A more robust solution would require more sophisticated parsing.
+            console.warn(
+                'Could not parse function source. Cloning might be incomplete.'
+            )
+            clonedFunc = new Function(funcSource)
+        }
+    } catch (e) {
+        console.error('Error creating new function from source:', e)
+        // Fallback or error handling
+        return null
+    }
 
-                // Get the property descriptor to copy getters, setters, writability, etc.
-                const descriptor = Object.getOwnPropertyDescriptor(
-                    Class.prototype,
-                    name
-                )
+    // Copy own properties (enumerable and non-enumerable) from the original function
+    const ownPropertyNames = Object.getOwnPropertyNames(func)
 
-                if (descriptor) {
-                    // Define the property on the MergedClass prototype
-                    // This correctly copies data properties, accessors (getters/setters)
-                    Object.defineProperty(
-                        MergedClass.prototype,
-                        name,
-                        descriptor
-                    )
-                }
-            })
+    ownPropertyNames.forEach((name) => {
+        if (name !== 'prototype' && name !== 'length' && name !== 'name') {
+            // Avoid copying intrinsic properties that are automatically set or managed
+            // by the Function constructor or function definition.
+            const descriptor = Object.getOwnPropertyDescriptor(func, name)
+            if (descriptor) {
+                Object.defineProperty(clonedFunc, name, descriptor)
+            }
         }
     })
 
-    return MergedClass
-}
-
-// --- Dummy Classes for Demonstration ---
-
-class ClassA {
-    constructor(name) {
-        console.log('ClassA constructor called')
-        this.nameA = name || 'defaultA'
+    // Manually copy 'name' and 'length' as they might not be correctly
+    // set by the Function constructor for all function types.
+    // However, be aware that 'name' might be standardized differently
+    // for functions created via new Function().
+    try {
+        Object.defineProperty(clonedFunc, 'name', {
+            value: func.name,
+            writable: false,
+            enumerable: false,
+            configurable: true
+        })
+    } catch (e) {
+        // Ignore errors if name is not configurable
     }
 
-    methodA() {
-        console.log(`MethodA called. NameA: ${this.nameA}`)
+    try {
+        Object.defineProperty(clonedFunc, 'length', {
+            value: func.length,
+            writable: false,
+            enumerable: false,
+            configurable: true
+        })
+    } catch (e) {
+        // Ignore errors if length is not configurable
     }
 
-    get greetingA() {
-        return `Hello from A, ${this.nameA}`
-    }
-}
-
-class ClassB {
-    constructor(value) {
-        console.log('ClassB constructor called')
-        this.valueB = value || 0
-    }
-
-    methodB() {
-        console.log(`MethodB called. ValueB: ${this.valueB}`)
-    }
-
-    get greetingB() {
-        return `Greetings from B, value ${this.valueB}`
-    }
-}
-
-class ClassC {
-    constructor(tag) {
-        console.log('ClassC constructor called')
-        this.tagC = tag || 'C'
-    }
-
-    methodC() {
-        console.log(`MethodC called. TagC: ${this.tagC}`)
-    }
-
-    // This method has the same name as one in ClassA - ClassC's version should win
-    methodA() {
-        console.log(`MethodA called from ClassC. TagC: ${this.tagC}`)
-    }
+    return clonedFunc
 }
 
 // --- Example Usage ---
 
-const MergedClassAB = mergeClasses(ClassA, ClassB)
-const instanceAB = new MergedClassAB('testName', 100)
+// Original function with a custom property
+function originalFunction(a, b) {
+    return a + b
+}
+originalFunction.description = 'This is the original function'
+Object.defineProperty(originalFunction, 'internalId', {
+    value: 123,
+    enumerable: false,
+    writable: false,
+    configurable: false
+})
 
-console.log('\n--- Testing MergedClassAB ---')
-console.log('Instance properties:', instanceAB) // Should have nameA and valueB
-instanceAB.methodA() // Should call ClassA's methodA
-instanceAB.methodB() // Should call ClassB's methodB
-console.log(instanceAB.greetingA) // Should call ClassA's getter
-console.log(instanceAB.greetingB) // Should call ClassB's getter
+const clonedFunction = cloneFunction(originalFunction)
 
-const MergedClassABC = mergeClasses(ClassA, ClassB, ClassC)
-const instanceABC = new MergedClassABC('anotherName', 200, 'TAGGED')
+console.log('Original Function:', originalFunction.toString())
+console.log('Cloned Function:', clonedFunction.toString())
 
-console.log('\n--- Testing MergedClassABC ---')
-console.log('Instance properties:', instanceABC) // Should have nameA, valueB, and tagC
-instanceABC.methodA() // Should call ClassC's methodA because ClassC was last
-instanceABC.methodB() // Should call ClassB's methodB
-instanceABC.methodC() // Should call ClassC's methodC
-console.log(instanceABC.greetingA) // Should still call ClassA's getter (getters/setters are copied by descriptor)
-console.log(instanceABC.greetingB) // Should still call ClassB's getter
+console.log('Original Function Result:', originalFunction(2, 3))
+console.log('Cloned Function Result:', clonedFunction(2, 3))
 
-// Demonstrate merging classes where later classes overwrite methods
-const MergedClassCAB = mergeClasses(ClassC, ClassA, ClassB) // ClassB and ClassA now come later
-const instanceCAB = new MergedClassCAB('xyz', 999, 'C_FIRST')
+console.log('Original Function Description:', originalFunction.description)
+console.log('Cloned Function Description:', clonedFunction.description)
 
-console.log('\n--- Testing MergedClassCAB (Order Changed) ---')
-console.log('Instance properties:', instanceCAB) // Should have nameA, valueB, and tagC
-instanceCAB.methodA() // Should call ClassA's methodA because ClassA was last among those with methodA
-instanceCAB.methodB() // Should call ClassB's methodB
-instanceCAB.methodC() // Should call ClassC's methodC
+console.log('Original Function internalId:', originalFunction.internalId)
+console.log('Cloned Function internalId:', clonedFunction.internalId)
+
+console.log('Original Function name:', originalFunction.name)
+console.log('Cloned Function name:', clonedFunction.name) // Note: Might be 'anonymous' depending on how new Function is used
+
+console.log('Original Function length:', originalFunction.length)
+console.log('Cloned Function length:', clonedFunction.length)
+
+// Example with a function that relies on closure (will not work as expected in clone)
+function outer() {
+    let outerVar = "I'm from the outer scope"
+    return function inner() {
+        return outerVar
+    }
+}
+
+const originalClosureFunc = outer()
+const clonedClosureFunc = cloneFunction(originalClosureFunc)
+
+console.log('\n--- Closure Example ---')
+console.log('Original Closure Function Result:', originalClosureFunc())
+try {
+    console.log('Cloned Closure Function Result:', clonedClosureFunc()) // This will likely throw an error or return undefined
+} catch (e) {
+    console.log('Cloned Closure Function Result: Error -', e.message)
+}

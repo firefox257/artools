@@ -1,0 +1,120 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Alvar.js Camera Pose (Relative)</title>
+    <script src="path/to/alvar.js"></script>
+    <style>
+        #videoElement {
+            display: none; /* Hide the video element */
+        }
+        #canvasElement {
+            position: absolute;
+            top: 0;
+            left: 0;
+        }
+    </style>
+</head>
+<body>
+    <video id="videoElement" autoplay muted playsinline></video>
+    <canvas id="canvasElement"></canvas>
+    <div id="poseInfo">
+        <p>Camera X: <span id="posX"></span></p>
+        <p>Camera Y: <span id="posY"></span></p>
+        <p>Camera Z: <span id="posZ"></span></p>
+        <p>Camera Rx: <span id="rotX"></span></p>
+        <p>Camera Ry: <span id="rotY"></span></p>
+        <p>Camera Rz: <span id="rotZ"></span></p>
+    </div>
+
+    <script>
+        const videoElement = document.getElementById('videoElement');
+        const canvasElement = document.getElementById('canvasElement');
+        const poseInfoDiv = document.getElementById('poseInfo');
+        const posXSpan = document.getElementById('posX');
+        const posYSpan = document.getElementById('posY');
+        const posZSpan = document.getElementById('posZ');
+        const rotXSpan = document.getElementById('rotX');
+        const rotYSpan = document.getElementById('rotY');
+        const rotZSpan = document.getElementById('rotZ');
+        let alvarTracker;
+
+        // Function to start the camera
+        async function startCamera() {
+            try {
+                const stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: 'environment' } });
+                videoElement.srcObject = stream;
+                videoElement.onloadedmetadata = () => {
+                    videoElement.play();
+                    // Initialize Alvar.js once the video metadata is loaded
+                    initializeAlvar();
+                };
+            } catch (err) {
+                console.error('Error accessing camera:', err);
+                poseInfoDiv.innerHTML = '<p>Error accessing camera. Please ensure you have a webcam and grant permissions.</p>';
+            }
+        }
+
+        // Function to initialize Alvar.js (conceptual)
+        function initializeAlvar() {
+            // This is a placeholder. Actual initialization depends on Alvar.js API.
+            // You would likely configure markers or other tracking parameters here.
+            // alvarTracker = new Alvar.Tracker({ ... });
+            console.warn("Alvar.js initialization is conceptual. Refer to Alvar.js documentation.");
+
+            // Set canvas dimensions to match video feed
+            canvasElement.width = videoElement.videoWidth;
+            canvasElement.height = videoElement.videoHeight;
+
+            // Start processing frames
+            requestAnimationFrame(processFrame);
+        }
+
+        // Function to process each video frame (conceptual)
+        function processFrame() {
+            if (alvarTracker && videoElement.readyState === videoElement.HAVE_ENOUGH_DATA) {
+                const context = canvasElement.getContext('2d');
+                context.drawImage(videoElement, 0, 0, canvasElement.width, canvasElement.height);
+
+                // Process the canvas or video frame with Alvar.js
+                // This is where Alvar.js would do its tracking and return pose data.
+                // The method to get pose data will depend on the Alvar.js API.
+                // Let's assume a hypothetical method like alvarTracker.getPose(canvasElement)
+                // const pose = alvarTracker.getPose(canvasElement);
+
+                // Hypothetical pose data structure (replace with actual Alvar.js output)
+                const hypotheticalPose = {
+                    translation: { x: 0, y: 0, z: -5 }, // Example relative position
+                    rotation: { x: 0, y: 0, z: 0 } // Example relative rotation (Euler angles in degrees)
+                };
+
+                // Update the displayed pose information (conceptual)
+                if (hypotheticalPose) { // In a real scenario, check if tracking was successful
+                    posXSpan.textContent = hypotheticalPose.translation.x.toFixed(3);
+                    posYSpan.textContent = hypotheticalPose.translation.y.toFixed(3);
+                    posZSpan.textContent = hypotheticalPose.translation.z.toFixed(3);
+                    // If Alvar.js provides rotation matrix or quaternion, convert to Euler angles (rx, ry, rz)
+                    // For this example, we assume hypothetical Euler angles are available
+                    rotXSpan.textContent = hypotheticalPose.rotation.x.toFixed(3);
+                    rotYSpan.textContent = hypotheticalPose.rotation.y.toFixed(3);
+                    rotZSpan.textContent = hypotheticalPose.rotation.z.toFixed(3);
+                } else {
+                    // Handle cases where tracking is lost
+                    posXSpan.textContent = 'N/A';
+                    posYSpan.textContent = 'N/A';
+                    posZSpan.textContent = 'N/A';
+                    rotXSpan.textContent = 'N/A';
+                    rotYSpan.textContent = 'N/A';
+                    rotZSpan.textContent = 'N/A';
+                }
+            }
+
+            // Continue processing frames
+            requestAnimationFrame(processFrame);
+        }
+
+        // Start the camera when the page loads
+        window.onload = startCamera;
+
+    </script>
+</body>
+</html>

@@ -25,6 +25,15 @@
     <script type="module">
         import 'globals'
         import 'sharedUtils'
+		import  {mm2px, EventTemplate} from 'ux'
+		
+		
+		
+		
+		
+		
+		
+		
         var can = $q('.full')
         var g
         {
@@ -45,282 +54,41 @@
             // g.restore()
         }
 
-        var PXPMM = 1 //  1 pixel per mm
-        function pxpmm() {
-            return PXPMM
-        }
-        //(()=> {
-        //var mm=document.createElement("span")
-        //mm.style.display="inline-block"
-        //mm.style.position="absolute"
-        //mm.style.width="1000mm"
-        //document.body.appendChild(mm)
-        //var mmm = mm.clientWidth/1000.0;
-        //document.body.removeChild(mm)
-        //return mmm
-        //})()
-
-        function px2ar(d) {
-            return d / (PXPMM * 1000.0)
-        }
-        function ar2px(d) {
-            return d * (PXPMM * 1000.0)
-        }
-
-        function px2mm(d) {
-            return d / PXPMM
-        }
-        function mm2px(d) {
-            return d * PXPMM
-        }
-
-        function px2cm(d) {
-            return d / (PXPMM * 10)
-        }
-        function cm2px(d) {
-            return d * (PXPMM * 10)
-        }
-
-        function px2dm(d) {
-            return d / (PXPMM * 100)
-        }
-        function dm2px(d) {
-            return d * (PXPMM * 100)
-        }
-
-        function px2m(d) {
-            return d / (PXPMM * 1000)
-        }
-        function m2px(d) {
-            return d * (PXPMM * 1000)
-        }
-
-        function px2in(d) {
-            return d / (PXPMM * 25.4)
-        }
-        function in2px(d) {
-            return d * (PXPMM * 25.4)
-        }
-
-        function px2ft(d) {
-            return d / (PXPMM * 25.4 * 12)
-        }
-        function ft2px(d) {
-            return d * (PXPMM * 25.4 * 12)
-        }
-
-        function px2yd(d) {
-            return d / (PXPMM * 25.4 * 36)
-        }
-        function yd2px(d) {
-            return d * (PXPMM * 25.4 * 36)
-        }
-
-        function px2pt(d) {
-            //0.3528 mm per pt
-            return d / (PXPMM * 0.3528)
-        }
-        function pt2px(d) {
-            //0.3528 mm per pt
-            return d * (PXPMM * 0.3528)
-        }
-
-        const EventTemplate = (name) => `
-			function On${name}Event() {}
-			dclass(On${name}Event, [], {
-			    prototype: {
-			        _on${name}Observer: [],
-			        subscribeOn${name}: function (f) {
-			            this._on${name}Observer.push(f)
-			        },
-			        triggerOn${name}: function () {
-			            var c = this._on${name}Observer
-			            for (var i = 0; i < c.length; i++) {
-			                c[i]()
-			            }
-			        }
-			    }
-			})
-
-		`
-        $$(EventTemplate('Change'))
-
-        $$(EventTemplate('StyleChange'))
+		const OnSizeChangeEvent = EventTemplate('SizeChange')
 		
-		
-		
-		
-        function Style(style) {
-			if(style) {
-				////////////**********
-			}
-		}
-        dclass(Style, [], {
-            prototype: {
-                padding: [0, 0, 0, 0],
-                expand: [0, 0, 0, 0],// percentages
-                size: [,],
-                maxSize: [,],
-                minSize: [,]
-            }
-        })
-
-        function StyleExtender(style) {
-            this.subscribeOnStyleChange(this._styleChangeHandler)
-            if (style) {
-                this.style = style
-            }
-        }
-
-        dclass(StyleExtender, [OnStyleChangeEvent], {
-            prototype: {
-                _requestRedraw: false,
-                _styleChangeHandler: function () {
-                    this._requestRedraw = true
-                },
-
-                get requestRedraw() {
-                    return this._requestRedraw
-                },
-
-                _style: new Style(),
-
-                get style() {
-                    return this._style.slice()
-                },
-
-                set style(style) {
-                    this._style = style
-                    this.triggerOnStyleChange()
-                },
-
-                get padding() {
-                    return this._style.padding.slice()
-                },
-
-				
-				
-				
-                set padding(d) {
-                    var changed = false
-                    for (var i = 0; i < 4; i++) {
-                        if (d[i] != undefined) {
-                            if (this._style.padding[i] != d[i]) {
-                                this._style.padding[i] = d[i]
-                                changed = true
-                            }
-                        }
-                    }
-                    if (changes) {
-                        this.triggerOnStyleChange()
-                    }
-                }, //end set padding
-                get expand() {
-                    return this._style.expand.slice()
-                },
-                set expand(d) {
-                    var changed = false
-                    for (var i = 0; i < 4; i++) {
-                        if (d[i] != undefined) {
-                            if (this._style.expand[i] != d[i]) {
-                                this._style.expand[i] = d[i]
-                                changed = true
-                            }
-                        }
-                    }
-                    if (changed) {
-                        this.triggerOnStyleChange()
-                    }
-                }, //end set expand
-
-                get size() {
-                    return this._style.size.slice()
-                },
-                set size(d) {
-                    var changed = false
-                    for (var i = 0; i < 4; i++) {
-                        if (this._style.size[i] != d[i]) {
-                            this._style.size[i] = d[i]
-                            changed = true
-                        }
-                    }
-                    if (changed) {
-                        this.triggerOnStyleChange()
-                    }
-                }, //end size
-
-                get maxSize() {
-                    return this._style.maxSize.slice()
-                },
-                set maxSize(d) {
-                    var changed = false
-                    for (var i = 0; i < 4; i++) {
-                        if (this._style.maxSize[i] != d[i]) {
-                            this._style.maxSize[i] = d[i]
-                            changed = true
-                        }
-                    }
-                    if (changes) {
-                        this.triggerOnStyleChange()
-                    }
-                }, //end maxSize
-
-                get minSize() {
-                    return this._style.minSize.slice()
-                },
-                set minSize(d) {
-                    var changed = false
-                    for (var i = 0; i < 4; i++) {
-                        if (this._style.minSize[i] != d[i]) {
-                            this._style.minSize[i] = d[i]
-                            changed = true
-                        }
-                    }
-                    if (changed) {
-                        this.triggerOnStyleChange()
-                    }
-                } //end maxSize
-            } //end prototype
-        }) //end StyleExtender
-		
-		function TextStyle(o) {
-			this.StyleSuper.apply(this,o)
-		}
-		dclass(TextStyle,[Style], {
-			prototype:{
-				color:0x00000000,
-			}
-		})
-		
-		function TextStyleExtender(style) {
-			this.StyleExtenderSuper.apply(this, style)
-		}
-		dclass(TextStyleExtender,[StyleExtender],{
-			prototype:{
-				_style:new TextStyle(),
-				get color() {
-					return this._style.color
-				},
-				set color(color) {
-					if(color != this._style.color) {
-						this._style.color= color
-						this.triggerOnStyleChange()
-					}
-				},
-				
-			}
-		})
-		
-		function UxBase() {
+        function Window(size) {
+			setArray(this._size, size)
+			this._canvas = s = document.createElement('canvas');
+			this._canvas.width=this._size[0]
+			this._canvas.height=this._size[1]
 			
+    		const context = canvas.getContext('2d');
+			this._setUpEvents()
 		}
-		dclass(UxBase,[], {
-			prototype:{
+		dclass(Window,[OnSizeChangeEvent],{
+			prototype: {
+				_redrawRequest: false,
+				_setUpEvents: function() {
+					var self = this
+					this.subscribeOnSizeChange(function(e) {
+						
+					})
+				},
+				
+				_canvas: undefined,
+				_ctx: undefined,
+				
+				_size: [640, 480],
+				get size() {
+					return this._size.slice()
+				},
+				set size(size) {
+					var changed = false
+				}
+				 
 				
 			}
-		})
-		
-		
+		})//*/
 
         alert('done')
     </script>

@@ -1,0 +1,104 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Three.js Textured Text</title>
+    <style>
+        body { margin: 0; }
+        canvas { display: block; }
+    </style>
+</head>
+<meta charset="UTF-8">
+
+<body>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+
+<script>
+    // Set up the scene, camera, and renderer
+    const scene = new THREE.Scene();
+    const camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
+    const renderer = new THREE.WebGLRenderer({ antialias: true });
+    renderer.setSize(window.innerWidth, window.innerHeight);
+    document.body.appendChild(renderer.domElement);
+
+    // --- Create text on a 2D canvas ---
+    const canvas = document.createElement('canvas');
+    const context = canvas.getContext('2d');
+
+    const text = "Text ♥☃☕♨⚙✅";
+    const fontSize = 60;
+    context.font = `${fontSize}px Arial`;
+
+    // Measure text to set canvas size
+    const metrics = context.measureText(text);
+   //alert(metrics.width)
+   const textWidth = metrics.width;
+	
+    const textHeight = fontSize; // Approximate height
+
+    canvas.width = textWidth;
+    canvas.height = textHeight;
+
+    // Redraw text on resized canvas
+    context.font = `${fontSize}px Arial`;
+    context.textAlign = 'center';
+    context.textBaseline = 'middle';
+    context.fillStyle = '#ffffff'; // Text color
+    //context.fillRect(0, 0, canvas.width, canvas.height); // Background for the texture
+    context.fillStyle = '#0000ff'; // Text color
+    context.fillText(text, canvas.width / 2, canvas.height / 2);
+
+    // You can draw patterns or images onto the canvas here before creating the texture
+    // For example, to add a simple pattern:
+    // const patternCanvas = document.createElement('canvas');
+    // patternCanvas.width = 20;
+    // patternCanvas.height = 20;
+    // const pctx = patternCanvas.getContext('2d');
+    // pctx.fillStyle = '#ff0000';
+    // pctx.fillRect(0, 0, 10, 10);
+    // pctx.fillStyle = '#0000ff';
+    // pctx.fillRect(10, 10, 10, 10);
+    // const pattern = context.createPattern(patternCanvas, 'repeat');
+    // context.fillStyle = pattern;
+    // context.fillText(text, canvas.width / 2, canvas.height / 2);
+
+
+    // --- Create a Three.js texture from the canvas ---
+    const texture = new THREE.CanvasTexture(canvas);
+    texture.needsUpdate = true; // Important for dynamic canvases
+
+    // --- Create a plane geometry and apply the texture ---
+    // The size of the plane should match the canvas size for correct aspect ratio
+    const planeWidth = canvas.width / 100; // Adjust scale as needed
+    const planeHeight = canvas.height / 100; // Adjust scale as needed
+
+    const geometry = new THREE.PlaneGeometry(planeWidth, planeHeight);
+    const material = new THREE.MeshBasicMaterial({
+        map: texture,
+        side: THREE.DoubleSide, // Render both sides of the plane
+        transparent: true // If your canvas has transparent areas
+    });
+
+    const textMesh = new THREE.Mesh(geometry, material);
+    scene.add(textMesh);
+
+    // Position the camera
+    camera.position.z = 5;
+
+    // Handle window resizing
+    window.addEventListener('resize', () => {
+        camera.aspect = window.innerWidth / window.innerHeight;
+        camera.updateProjectionMatrix();
+        renderer.setSize(window.innerWidth, window.innerHeight);
+    });
+
+    // Animation loop
+    function animate() {
+        requestAnimationFrame(animate);
+        renderer.render(scene, camera);
+    }
+    animate();
+</script>
+
+</body>
+</html>

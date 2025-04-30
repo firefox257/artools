@@ -1,17 +1,28 @@
+//const {hi} = require("./try6.js")
 
 
 
-
-var b={
-	x:123,
-	y:222,
-	title:"hdhdhhd",
-	func:function() {
-		
-	}
+function loadMod(mod) {
+	return require(mod)
 }
 
-for(var i in b) {
-	console.log(i)
+
+const {hi } = loadMod("./try6.js")
+
+hi()
+
+console.log(tttt)
+/*
+function try1() {
+	var x = 123
+	var y = 444
+	return{ x:x, y:y}
 }
 
+const {x, y} = try1()
+
+console.log(x)
+console.log(y)
+
+console.log("done")
+*/

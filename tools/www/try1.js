@@ -1,6 +1,6 @@
 
 
-var v= [1, , 2]
+ export function hi() {
+	alert("hi")
+}
 
-console.log(v)
-if(v[1]== undefined) console.log("here")

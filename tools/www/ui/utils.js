@@ -221,12 +221,3 @@ globalThis.isString = function(value) {
 globalThis.isChar =function(value) {
     return typeof value === 'string' && value.length === 1
 }
-
-globalThis.setArray=function(a1, a2) {
-	var l = a1.length
-	for(var i = 0; i< l; i++) {
-		if(a2[i] != undefined) {
-			a1[i]=a2[i]
-		}
-	}
-}

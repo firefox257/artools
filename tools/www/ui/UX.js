@@ -174,21 +174,22 @@ export function StyleTemplate(name, items) {
 	
 	})
 	
-	function ${name}Extender(style) {
+	function ${name}Extender(args) {
 		
 		
 		
-		if(style != undefined) {
-			this._style = new ${name}(style)
+		if(args.style != undefined) {
+			this._style = new ${name}(args.style)
 		} else {
 			this._style = new ${name}()
 		}
-		this._setUpEvents()
+		//this._setUpEvents()
 	}
 	dclass(${name}Extender,[OnStyleChangeEvent], {
 		prototype: {
 			
-			_requestRedraw: false,
+			
+			/*_requestRedraw: false,
             get requestRedraw() {
 				return this._requestRedraw
             },
@@ -201,12 +202,13 @@ export function StyleTemplate(name, items) {
 					})
 		
 			},
+			*/
 			 
             _style: undefined,
 			
-            //get style() {
-				//return this._style.slice()
-            //},
+            get style() {
+				return deepClone(this._style)
+            },
 			
             set style(style) {
 				var changed = false
@@ -243,9 +245,14 @@ export const { Style, StyleExtender } = StyleTemplate('Style', {
 })
 
 
-
+export const OnAnimateStartEvent = EventTemplate('AnimateStart')
 export const OnAnimateEvent = EventTemplate('Animate')
+export const OnAnimateStopEvent = EventTemplate('AnimateStop')
 
+export function OnAnimationsEvent() {}
+dclass(OnAnimationsEvent,[OnAnimateStartEvent,OnAnimateEvent,OnAnimateStopEvent], {
+	prototype:{}
+})
 
 /*
 const OnWindowSizeChangeEvent = EventTemplate('WindowSizeChange'))

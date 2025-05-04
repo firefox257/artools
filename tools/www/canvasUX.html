@@ -25,70 +25,108 @@
     <script type="module">
         import 'globals'
         import 'sharedUtils'
-		import  {mm2px, EventTemplate} from 'ux'
-		
-		
-		
-		
-		
-		
-		
-		
-        var can = $q('.full')
-        var g
-        {
-            var w = can.clientWidth
-            var h = can.clientHeight
-            can.setAttribute('width', w + 'px')
-            can.setAttribute('height', h + 'px')
+        import {
+            mm2px,
+            EventTemplate,
+            StyleTemplate,
+            OnAnimationsEvent
+        } from 'ux'
 
-            g = can.getContext('2d')
+        /*
+		const { BaseStyle, BaseStyleExtender } = StyleTemplate('BaseStyle', {
+            border: [0, 0, 0, 0,'rgba(0,255,255,1)', 'solid stubbed'],
+            margin: [0, 0, 0, 0],
+            padding: [0, 0, 0, 0],
+            backgroundColor: 'rgba(0,0,0,0)',
+            roundCorners: [0, 0, 0, 0],
+            show: true,
+            size: [0, 0],
+            maxSize: [null, null],
+            minSize: [10, 10]
+        })
+		//*/
 
-            ///g.roundRect(0, 0, 300, 300, 15)
-            ///g.clip()
-
-            //g.fillStyle = 'rgba(0,0,0,0.8)'
-            //g.beginPath()
-            // g.roundRect(0, 0, 300, 300, 15)
-            //g.fill()
-            // g.restore()
-        }
-
-		const OnSizeChangeEvent = EventTemplate('SizeChange')
 		
-        function Window(size) {
-			setArray(this._size, size)
-			this._canvas = s = document.createElement('canvas');
-			this._canvas.width=this._size[0]
-			this._canvas.height=this._size[1]
+        function BaseWindow(args) {
+            //this.BaseStyleExtenderSuper.apply(this, args)
+            this.calcSize()
+			this._canvas = document.createElement('canvas');
+    		this._ctx = canvas.getContext('2d');
 			
-    		const context = canvas.getContext('2d');
-			this._setUpEvents()
-		}
-		dclass(Window,[OnSizeChangeEvent],{
-			prototype: {
-				_redrawRequest: false,
-				_setUpEvents: function() {
-					var self = this
-					this.subscribeOnSizeChange(function(e) {
-						
-					})
+			var size= this.preferesSize()
+			this._canvas.width = size[0]
+    		this._canvas.height = size[1]
+        }
+		
+        dclass(BaseWindow, [], {
+            prototype: {
+				
+                _canvas: undefined,
+                _ctx: undefined,
+                _redrawRequest: false,
+				_preferedSize: [0,0],
+				_image:null,
+				get preferedSize() {
+					return this._preferedSize.slice()
+				},
+				get image() {
+					return this._image
 				},
 				
-				_canvas: undefined,
-				_ctx: undefined,
-				
-				_size: [640, 480],
-				get size() {
-					return this._size.slice()
+				_baseSizeCalc: function () {
+					var s = this._style
+					var p = s.padding
+					var b = s.border
+					var m = s.margin
+					return [
+					p[0]+b[0]+m[0], 
+					p[1]+b[1]+m[1],
+					p[2]+b[2]+m[2],
+					p[3]+b[3]+m[3]]
 				},
-				set size(size) {
-					var changed = false
+                calcSize: function () {
+                    throw new Error('Need to override _calcSize')
+                },
+				render: function(){
+					throw new Error('need to over ride render function')
 				}
-				 
-				
+				//*/
+            }
+			
+        })//endnof BaseWindow
+		
+		
+		const { TextStyle, TextStyleExtender } = StyleTemplate('TextStyle', {
+            border: [0, 0, 0, 0,'rgba(0,255,255,1)', 'solid stubbed'],
+            margin: [0, 0, 0, 0],
+            padding: [0, 0, 0, 0],
+            backgroundColor: 'rgba(0,0,0,0)',
+            roundCorners: [0, 0, 0, 0],
+            size: [0, 0],
+            maxSize: [null, null],
+            minSize: [10, 10],
+			font: `10px Arial`
+        })
+		
+		
+		const OnTextChangeEvent = EventTemplate("TextChange")
+		
+		function TextButton(args){
+			this.TextStyleExtenderSuper.apply(args)
+			
+		}
+		dclass(TextButton,[BaseWindow, OnTextChangeEvent, TextStyleExtender],{
+			prototype: {
+				_text:"",
+				_setupEvents:function() {
+					
+				},
+				calcSize: function () {
+					
+				}
 			}
-		})//*/
+		})
+		
 
         alert('done')
     </script>

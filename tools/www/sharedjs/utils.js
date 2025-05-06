@@ -1,79 +1,80 @@
-globalThis.deepSet = function (target, source, def) {
-    if (target === source) {
-        return
-    }
+globalThis.getAllKeys = function (source, ignore) {
+    var stringKeys = Object.getOwnPropertyNames(source)
+    var symbolKeys = Object.getOwnPropertySymbols(source)
+    var allKeys = [...stringKeys, ...symbolKeys]
 
-    // Get all own property keys, including non-enumerable and Symbols
-    const keys = Reflect.ownKeys(source)
-
-    for (const key of keys) {
-        const descriptor = Object.getOwnPropertyDescriptor(source, key)
-
-        // If the property has a getter or setter, define it on the target
-        if (descriptor && (descriptor.get || descriptor.set)) {
-            Object.defineProperty(target, key, descriptor)
-        } else if (descriptor && descriptor.hasOwnProperty('value')) {
-            // If it's a data property (including functions)
-            const sourceValue = descriptor.value
-            const targetValue = target[key]
-            var defValue
-            if (def) defValue = def[key]
-            // Check if both source and target values are objects (but not null)
-            if (
-                typeof sourceValue === 'object' &&
-                sourceValue !== null &&
-                typeof targetValue === 'object' &&
-                targetValue !== null
-            ) {
-                // Check if both are arrays or both are plain objects
-                if (Array.isArray(sourceValue) === Array.isArray(targetValue)) {
-                    // Recursively call deepSet for nested objects/arrays
-
-                    deepSet(targetValue, sourceValue, defValue)
-                } else {
-                    if (defValue != undefined) {
-                        //alert("found " +key)
-                        continue
-                    }
-                    try {
-                        target[key] = sourceValue
-                    } catch (e) {
-                        // Handle potential errors if the target property is not writable
-                        console.error(
-                            `Could not set property ${String(key)} on target:`,
-                            e
-                        )
-                    }
-                }
-            } else {
-                // Otherwise, directly assign the value
-                if (defValue != undefined) {
-                    //alert("found " +key)
-                    continue
-                }
-                try {
-                    target[key] = sourceValue
-                } catch (e) {
-                    // Handle potential errors if the target property is not writable
-                    console.error(
-                        `Could not set property ${String(key)} on target:`,
-                        e
-                    )
-                }
-            }
+    var retKeys = {}
+    var l = allKeys.length
+    for (var i = 0; i < l; i++) {
+        var key = allKeys[i]
+        if (!ignore[key]) {
+            retKeys[key] = true
         }
-        // Note: Properties without a value or getter/setter (should be rare for own properties) are ignored.
     }
-    return target
+    return retKeys
+}
+
+globalThis.deepSet = function (allKeys, target, source, ignore) {
+    for (var key in allKeys) {
+        const descriptor = Object.getOwnPropertyDescriptor(source, key)
+        // If a descriptor exists (which it should for own properties), define the property on the copy
+        if (descriptor) {
+            Object.defineProperty(target, key, descriptor)
+        }
+    }
 }
 
 globalThis.dclass = function (dc, sources, def) {
-    sources.forEach((source) => {
-        dc.prototype[source.name + 'Super'] = source
-        deepSet(dc, source, def)
-    })
-    deepSet(dc, def)
+    //check overrides
+    var funcr = {}
+
+    for (var skey in sources) {
+        //check overrides
+        var source = sources[skey]
+        var allKeys = getAllKeys(source.prototype, { constructor: true })
+        //check overrides
+        var override = source.override ? source.override : {}
+
+        for (var key in allKeys) {
+            if (funcr[key] !== undefined && override[key] == undefined) {
+                throw new Error(
+                    `Overlay classes ${skey} Clobber on ${key} is not overrideable`
+                )
+            }
+            if (override[key]) funcr[key] = true
+            else funcr[key] = false
+        }
+
+        var sname = skey + 'Super'
+
+        dc.prototype[sname] = source
+        deepSet(allKeys, dc.prototype, source.prototype)
+    }
+
+    {
+        var allKeys = getAllKeys(def.prototype, { constructor: true })
+
+        for (var key in allKeys) {
+            if (funcr[key] !== undefined && !funcr[key]) {
+                throw new Error(`Clobber on ${key} is not overrideable`)
+            }
+        }
+
+        deepSet(allKeys, dc.prototype, def.prototype)
+
+        {
+            var allKeys = getAllKeys(def, { prototype: true })
+            //check overrides
+            deepSet(allKeys, dc, def)
+        }
+    }
+    //*/
 }
+
+
+
+
+
 
 //////======
 

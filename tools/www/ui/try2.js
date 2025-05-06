@@ -1,25 +1,23 @@
 ///-----
-var try1={
-	
-	y:123,
-	get x() {
-		return this.y
-	},
-	set x(v) {
-		this.y =v
-	}
+
+
+
+function try1( ) {
+	//console.log(hi)
+	console.log("here1")
 }
 
-const stringKeys = Object.getOwnPropertyNames(try1)
-const symbolKeys = Object.getOwnPropertySymbols(try1)
-const allKeys = [...stringKeys, ...symbolKeys]
 
-allKeys.forEach((key) => {
-	
-	console.log(key)
-	
-})
+try1.prototype.func=function() {
+	//console.log(hi)
+}
 
 
+function newTry1() {
+	const ret = new try1()
+	return ret
+}
 
 
+newTry1()
+newTry1()

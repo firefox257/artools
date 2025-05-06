@@ -76,10 +76,18 @@ export function pt2px(d) {
 }
 
 export function EventTemplate(name) {
+	
+	
     return new Function(`
 	
 		function On${name}Event() {}
-		dclass(On${name}Event, [], {
+		dclass(On${name}Event, {}, {
+			override:{},
+			prototype:{}
+		})
+		
+		
+		dclass(On${name}Event, {}, {
     		prototype: {
         		_on${name}Observer: [],
         		subscribeOn${name}: function (f) {
@@ -93,10 +101,14 @@ export function EventTemplate(name) {
         		}
     		}
 		})
-	
+		
 		return On${name}Event
 	`)()
+	
 }
+
+export const OnStyleChangeEvent = EventTemplate('StyleChange')
+
 
 export function StyleTemplate(name, items) {
     var st = []
@@ -157,92 +169,23 @@ export function StyleTemplate(name, items) {
     }
 
     st = `
-	
-	function ${name}(style) {
-		if(style!=undefined) {
-			for(var i in ${name}.prototype) {
-				if(style[i] != undefined) {
-					this[i] = style[i]
-				}
-			}
-		}
+	function ${name}() {
 	}
-	dclass(${name},[], {
-		prototype: {
-			${listitems()}
-		}
-	
-	})
-	
-	function ${name}Extender(args) {
-		
-		
-		
-		if(args.style != undefined) {
-			this._style = new ${name}(args.style)
-		} else {
-			this._style = new ${name}()
-		}
-		//this._setUpEvents()
-	}
-	dclass(${name}Extender,[OnStyleChangeEvent], {
-		prototype: {
-			
-			
-			/*_requestRedraw: false,
-            get requestRedraw() {
-				return this._requestRedraw
-            },
-			
-			_setUpEvents:function() {
-				var self = this 
-				this.subscribeOnStyleChange(function(){
-					
-					self._requestRedraw = true
-					})
-		
-			},
-			*/
-			 
-            _style: undefined,
-			
-            get style() {
-				return deepClone(this._style)
-            },
-			
-            set style(style) {
-				var changed = false
-				for(var i in ${name}.prototype) {
-					if(style[i] != undefined) {
-						this._style[i] = style[i]
-						changed = true
-					}
-				}
-				if(changed) {
-					this.triggerOnStyleChange()
-				}
-            },
-			
-			${getterssetters()}
+	dclass(${name},{},{
+		override:{},
+		prototype:{
 			
 		}
-	})
+	})	
 	
+	return ${name}
 	
-	return {${name}, ${name}Extender}
 	`
-    return new Function(['OnStyleChangeEvent'], st)(OnStyleChangeEvent)
 }
 
-export const OnStyleChangeEvent = EventTemplate('StyleChange')
 
-export const { Style, StyleExtender } = StyleTemplate('Style', {
-    padding: [0, 0, 0, 0],
-    expand: [0, 0, 0, 0], // percentages
-    size: [null, null],
-    maxSize: [null, null],
-    minSize: [null, null]
-})
+
+
 
 
 export const OnAnimateStartEvent = EventTemplate('AnimateStart')
@@ -250,15 +193,11 @@ export const OnAnimateEvent = EventTemplate('Animate')
 export const OnAnimateStopEvent = EventTemplate('AnimateStop')
 
 export function OnAnimationsEvent() {}
-dclass(OnAnimationsEvent,[OnAnimateStartEvent,OnAnimateEvent,OnAnimateStopEvent], {
+dclass(OnAnimationsEvent,{
+	OnAnimateStartEvent:OnAnimateStartEvent,
+	OnAnimateEvent:OnAnimateEvent,
+	OnAnimateStopEvent:OnAnimateStopEvent}, {
 	prototype:{}
 })
-
-/*
-const OnWindowSizeChangeEvent = EventTemplate('WindowSizeChange'))
-export OnWindowSizeChangeEvent
-
-const OnAnimateEvent = EventTemplate('Animate'))
-export OnAnimateEvent
 
 //*/

@@ -25,124 +25,163 @@
     <script type="module">
         import 'globals'
         import 'sharedUtils'
-		
-        import {
-            mm2px,
-            EventTemplate,
-           // StyleTemplate,
-            //OnAnimationsEvent
-        } from 'ux'
-		
-		
+        import { mm2px } from 'ux'
 
-
- 
-		
-		
-		//*/
-        /*
-		const { BaseStyle, BaseStyleExtender } = StyleTemplate('BaseStyle', {
-            border: [0, 0, 0, 0,'rgba(0,255,255,1)', 'solid stubbed'],
-            margin: [0, 0, 0, 0],
-            padding: [0, 0, 0, 0],
-            backgroundColor: 'rgba(0,0,0,0)',
-            roundCorners: [0, 0, 0, 0],
-            show: true,
-            size: [0, 0],
-            maxSize: [null, null],
-            minSize: [10, 10]
-        })
-		//*/
-		/*
-        function BaseWindow(args) {
-            //this.BaseStyleExtenderSuper.apply(this, args)
-            this.calcSize()
-            this._canvas = document.createElement('canvas')
-            this._ctx = canvas.getContext('2d')
-
-            var size = this.preferesSize()
-            this._canvas.width = size[0]
-            this._canvas.height = size[1]
-        }
-
-        dclass(
-            BaseWindow,
-            {c},
-            {
-				override: {
-					calcSize:true,
-					render,true
-				},
-                prototype: {
-                    _canvas: undefined,
-                    _ctx: undefined,
-                    _redrawRequest: false,
-                    _preferedSize: [0, 0],
-                    _image: null,
-                    get preferedSize() {
-                        return this._preferedSize.slice()
-                    },
-                    get image() {
-                        return this._image
-                    },
-
-                    _baseSizeCalc: function () {
-                        var s = this._style
-                        var p = s.padding
-                        var b = s.border
-                        var m = s.margin
-                        return [
-                            p[0] + b[0] + m[0],
-                            p[1] + b[1] + m[1],
-                            p[2] + b[2] + m[2],
-                            p[3] + b[3] + m[3]
-                        ]
-                    },
-                    calcSize: function () {
-                        throw new Error('Need to override _calcSize')
-                    },
-                    render: function () {
-                        throw new Error('need to over ride render function')
-                    }
-                    
-                }
-            }
-        ) //endnof BaseWindow
-		//*/
-		/*
-        const { TextStyle, TextStyleExtender } = StyleTemplate('TextStyle', {
-            border: [0, 0, 0, 0, 'rgba(0,255,255,1)', 'solid stubbed'],
-            margin: [0, 0, 0, 0],
-            padding: [0, 0, 0, 0],
-            backgroundColor: 'rgba(0,0,0,0)',
-            roundCorners: [0, 0, 0, 0],
-            size: [0, 0],
-            maxSize: [null, null],
-            minSize: [10, 10],
-            font: `10px Arial`
-        })
-
-        const OnTextChangeEvent = EventTemplate('TextChange')
-
-        function TextButton(args) {
-            this.TextStyleExtenderSuper.apply(args)
-        }
-        dclass(
-            TextButton,
-            {
-                BaseWindow: BaseWindow,
-                OnTextChangeEvent: OnTextChangeEvent,
-                TextStyleExtender: TextStyleExtender
+        const StyleProxy = mclass({
+            proxy: {
+                get(obj, key) {
+                    return obj._style[key]
+                },
+                set(obj, key, v) {
+                    var s = obj._style[key]
+                    if (s !== undefined) {
+                        var changed = false
+                        if (Array.isArray(s)) {
+                            var l = s.length
+                            if (v.length < l) {
+                                l = v.length
+                            }
+                            for (var i = 0; i < l; i++) {
+                                if (v[i] !== undefined) {
+                                    if (s[i] !== v[i]) {
+                                        changed = true
+                                        s[i] = v[i]
+                                    }
+                                }
+                            }
+                        } else {
+                            if (s !== v) {
+                                changed = true
+                                s = v
+                            }
+                        }
+                        if (changed) {
+                            obj._style[key] = s
+                            obj._events.onStyleChange()
+                        }
+                    } //end if
+                } //end set
             },
-            {
-                prototype: {
-                    _text: '',
-                    _setupEvents: function () {},
-                    calcSize: function () {}
+            prototype: {
+                _style: undefined,
+                _events: undefined,
+                init(argobj) {
+                    if (
+                        argobj == undefined ||
+                        argobj.style == undefined ||
+                        argobj.events == undefined
+                    ) {
+                        throw new Error(
+                            'need to define an argument object that has style defaults and events object defined'
+                        )
+                    }
+                    this._style = argobj.style
+                    this._events = argobj.events
                 }
             }
-        )
-		//*/
+        }) //end style proxy
+        const StyleOverlay = mclass({
+            needed: {
+                _style: 'Need to implement _style object for styles to work',
+                _events: 'Need to implement _events object'
+            },
+            prototype: {
+                _styleProxy: undefined,
+                //_style: undefined,
+                //_events: undefined,
+                init() {
+                    alert('at1')
+                    this._styleProxy = new StyleProxy({
+                        style: this._style,
+                        events: this._events
+                    })
+                },
+                get style() {
+                    return this._styleProxy //deepClone(this._style)
+                },
+                set style(value) {
+                    var style = this._style
+                    for (var i in value) {
+						
+                        var s = style[i]
+                        var v = value[i]
+						
+                        if (s !== undefined && v !== undefined) {
+                            var changed = false
+                            if (Array.isArray(s)) {
+                                var l = s.length
+                                if (v.length < l) {
+                                    l = v.length
+                                }
+                                for (var i = 0; i < l; i++) {
+                                    if (v[i] !== undefined) {
+                                        if (s[i] !== v[i]) {
+                                            changed = true
+                                            s[i] = v[i]
+                                        }
+                                    }
+                                }
+                            } else {
+                                if (s !== v) {
+                                    changed = true
+                                    s = v
+                                }
+                            }
+							
+                            if (changed) {
+                                this._style[i] = s
+                                this._events.onStyleChange()
+                            }
+                    	} //end if
+                    }
+                }, //end set,
+            }
+        })
+
+        //*/
+
+        const WindowBase = mclass({
+			override: {
+                _style: true
+            },
+            sources: {
+                StyleOverlay: StyleOverlay
+            },
+            prototype: {
+                _events: new Events(),
+                _style: {
+                    margin: [0, 0, 0, 0],
+                    padding: [0, 0, 0, 0],
+                    border: [0, 'solid', 'rgba(0,0,0,0)'],
+                    roundCorners: [0, 0, 0, 0],
+                    expand: [0, 0, 0, 0],
+                    size: [null, null],
+                    minSize: [null, null],
+                    maxSize: [null, null]
+                },
+
+                init(obj) {},
+                _initCanvas() {},
+                get events() {
+                    return this._events
+                }
+            }
+        })
+
+        try {
+            var w = new WindowBase()
+			w.events.onStyleChange.subscribe(()=>{
+				alert("changes")
+			})
+			w.style={
+				padding:[0,null,0,0]
+			}
+            
+        } catch (err) {
+            alert(err)
+        }
+
+        //*/
         alert('done')
     </script>
 </html>

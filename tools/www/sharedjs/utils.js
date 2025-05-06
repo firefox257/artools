@@ -72,10 +72,110 @@ globalThis.dclass = function (dc, sources, def) {
 }
 
 
+/////mclass
+const mclassConstructProxy = {
+    construct(target, argumentsList, newTarget) {
+        var obj = new target()
+		var proxy;
+		
+		
+       	if (target.sources !== undefined) {
+            for (var i in target.sources) {
+				
+				if(proxy==undefined)proxy=target.sources[i].proxy
+				else {
+					throw new Error("mclass from all the sources can only have one proxy")
+				}
+            }
+        }
+		if(proxy==undefined)proxy=target.proxy
+		else {
+			throw new Error("mclass from all the sources can only have one proxy")
+		}
+		
+		
+        if (obj.init !== undefined) obj.init(...argumentsList)
+		if(proxy!==undefined) return new Proxy(obj, proxy)
+		
+		
+		////check needed
+		for(var i in target.needed) {
+			if(obj[i]==undefined) {
+				throw new Error(target.needed[i])
+				
+			}
+		}
+		
+        return obj
+    }
+}
 
+globalThis.mclass = function (def) {
+    var dc = function () {}
 
+    //check overrides
+    var funcr = {}
+	var needed={}
 
+    if (def.sources!==undefined) {
+        for (var skey in def.sources) {
+            //check overrides
+            var source = def.sources[skey]
+            var allKeys = getAllKeys(source.prototype, { constructor: true, init:true })
+            //check overrides
+            var override = source.override ? source.override : {}
 
+            for (var key in allKeys) {
+                if (funcr[key] !== undefined && override[key] == undefined) {
+                    throw new Error(
+                        `Overlay classes ${skey} Clobber on ${key} is not overrideable`
+                    )
+                }
+                if (override[key]) funcr[key] = true
+                else funcr[key] = false
+            }
+			
+            deepSet(allKeys, dc.prototype, source.prototype)
+			
+			if(source.needed !=undefined) {
+				for(var i in source.needed){
+					needed[i] = source.needed[i]
+				} 
+			}
+        }
+    }
+
+    {
+        var allKeys = getAllKeys(def.prototype, { constructor: true })
+
+        for (var key in allKeys) {
+            if (funcr[key] !== undefined && !funcr[key]) {
+                throw new Error(`Clobber on ${key} is not overrideable`)
+            }
+        }
+
+        deepSet(allKeys, dc.prototype, def.prototype)
+
+        {
+            var allKeys = getAllKeys(def, { prototype: true })
+            //check overrides
+            deepSet(allKeys, dc, def)
+        }
+		
+		
+		if(def.needed!=undefined) {
+			for(var i in def.needed) {
+				needed[i]=def.needed[i]
+			}
+		}
+    }
+    
+	dc.needed=needed
+
+    return new Proxy(dc, mclassConstructProxy)
+}
+
+//////mclass end
 //////======
 
 globalThis.deepClone = function (source, visited = new WeakMap()) {
@@ -285,3 +385,41 @@ globalThis.setArray = function (a1, a2) {
         }
     }
 }
+
+globalThis.Events = mclass({
+	proxy: {
+		get(obj, key, receiver) {
+				 return obj._events[key]? obj._events[key] : obj._events[key] = (()=>{
+					var list =[]
+					var f = function(...args){
+						list.forEach((i)=>{
+							i(...args)
+						})
+					}
+					
+					f.subscribe= function(func) {
+						list.push(func)
+					}
+					f.unsubscribe= function(func) {
+						list=list.filter(i=> i!==func)
+					}
+					return f
+				})()
+		}
+		
+	},
+	prototype: {
+		_events:{},
+		init() {
+			
+		},
+		toString() {
+			return this._events.toString()
+		}
+	}
+})
+
+
+
+
+

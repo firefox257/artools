@@ -25,7 +25,7 @@
     <script type="module">
         import 'globals'
         import 'sharedUtils'
-        import { mm2px } from 'ux'
+        import { mm2px, px2mm } from 'ux'
 
         const StyleProxy = mclass({
             proxy: {
@@ -102,10 +102,9 @@
                 set style(value) {
                     var style = this._style
                     for (var i in value) {
-						
                         var s = style[i]
                         var v = value[i]
-						
+
                         if (s !== undefined && v !== undefined) {
                             var changed = false
                             if (Array.isArray(s)) {
@@ -127,21 +126,30 @@
                                     s = v
                                 }
                             }
-							
+
                             if (changed) {
                                 this._style[i] = s
                                 this._events.onStyleChange()
                             }
-                    	} //end if
+                        } //end if
                     }
-                }, //end set,
+                } //end set,
             }
         })
 
         //*/
-
-        const WindowBase = mclass({
-			override: {
+		
+		
+		
+		
+        const WindowOverlay = mclass({
+			expandable:{
+				_style:true
+			},
+			needed: {
+				_calcSize:"Need to implement _calcSize for the compnent"
+			},
+            override: {
                 _style: true
             },
             sources: {
@@ -159,24 +167,56 @@
                     minSize: [null, null],
                     maxSize: [null, null]
                 },
-
-                init(obj) {},
-                _initCanvas() {},
+				_canvas:undefined,
+				_ctx:undefined,
+				_preferedSize:[0,0],
+				get preferedSize() {
+					return preferedSize.slice()
+				},
+                init() {
+					this._initCanvas()
+				},
+                _initCanvas() {
+					
+					this._canvas = document.createElement('canvas')
+                    this._ctx = this._canvas.getContext('2d')
+					this._calcSize()
+					this._canvas.width = this._preferedSize[0]
+					this._canvas.height = this._preferedSize[1]
+					//*/
+				},
                 get events() {
                     return this._events
                 }
             }
         })
-
-        try {
-            var w = new WindowBase()
-			w.events.onStyleChange.subscribe(()=>{
-				alert("changes")
-			})
-			w.style={
-				padding:[0,null,0,0]
+		
+		
+		const WText = mclass({
+			sources: {
+				WindowOverlay:WindowOverlay
+			},
+			prototype: {
+				_style: {
+					fontColor:"rgba(255,255,255,1.0)",
+					fontSize:23
+				},
+				_calcSize() {
+					return [0,0]
+				}
 			}
-            
+		})
+		//*/
+		
+		
+        try {
+            var w = new WText()
+            w.events.onStyleChange.subscribe(() => {
+                alert('changes')
+            })
+            w.style = {
+                padding: [0, null, 0, 0]
+            }
         } catch (err) {
             alert(err)
         }

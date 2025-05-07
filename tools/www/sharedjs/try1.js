@@ -2,72 +2,63 @@
 require('./utils.js')
 
 
-var e= new Events()
-
-e.onclick.subscribe((msg)=>{
-	console.log("here1 " + msg)
-})
-
-var ee = ()=>{
-	console.log("here2")
-}
-
-e.onclick.subscribe(ee)
-
-
-
-e.onclick(123)
-
-
-e.onclick.unsubscribe(ee)
-e.onclick(222)
-
-
-console.log(""+e)
-console.log("========•••••")
-
-const try1 = mclass({
-	needed: {
-		_implemented:"need to implement _implemnt with a list of numbers"
+const try1 =mclass({
+	expandable:{
+		obj:true
+	},
+	override:{
+		x:true
 	},
 	prototype: {
-		init() {
-			console.log(this._implemented)
-		}
+		x:111,
+		obj:[1]
 	}
 })
 
 
-
 const try2 = mclass({
-	sources:{
+	expandable:{
+		obj:true
+	},
+	override:{
+		x:true
+	},
+	sources: {
 		try1:try1
-	}, 
+	},
 	prototype: {
-		
-		init() {
-			try2.sources.try1.prototype.init.apply(this)
-		}
+		x:222, 
+		obj:[2]
 	}
 })
 
 
 const try3 = mclass({
-	sources:{
+	expandable:{
+		obj:true
+	},
+	override:{
+		x:true
+	},
+	sources: {
 		try2:try2
-	}, 
+	},
 	prototype: {
-		_implemented:[123,123],
-		init() {
-			try3.sources.try2.prototype.init.apply(this)
-			console.log("ended")
+		x:333,
+		obj:["bla"],
+		out() {
+			for(var i in this.obj) {
+				console.log(i +":" + this.obj[i])
+			}
 		}
+		
 	}
 })
 
+var t = new try3()
+t.out()
 
 
+//*/
 
- var t3 = new try3()
-
-
+console.log("done")

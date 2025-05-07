@@ -14,16 +14,51 @@ globalThis.getAllKeys = function (source, ignore) {
     return retKeys
 }
 
-globalThis.deepSet = function (allKeys, target, source, ignore) {
+const deepSet = function (allKeys, target, source, expandable) {
+	expandable= expandable?expandable:{}
     for (var key in allKeys) {
         const descriptor = Object.getOwnPropertyDescriptor(source, key)
         // If a descriptor exists (which it should for own properties), define the property on the copy
         if (descriptor) {
-            Object.defineProperty(target, key, descriptor)
+			
+			if(expandable[key]&& target[key]!== undefined) {
+				
+				var tobj = target[key]
+				var sobj = source[key]
+				var ttype = typeof tobj
+				var stype = typeof sobj
+				var ista = Array.isArray(tobj)
+				var issa= Array.isArray(sobj)
+				
+				if(ttype !="object" || stype !="object" || ista != issa) {
+					throw new Error(`${key} target and source need to be the same type of array or object`)
+				}
+				
+				if(ista) {
+					var l = sobj.length
+					for(var i = 0; i < l; i++) {
+						tobj.push(sobj[i])
+					}
+				} else {
+					var ak = getAllKeys(sobj,{})
+					deepSet(ak, target[key], source[key])
+				}
+				
+				
+			} else {
+				
+				Object.defineProperty(target, key, descriptor)
+			}
+			
         }
     }
 }
 
+globalThis.expandObject=function(traget,source) {
+	var allKeys = getAllKeys(source,{})
+	deepSet(allKeys, target, source,{})
+}
+/*
 globalThis.dclass = function (dc, sources, def) {
     //check overrides
     var funcr = {}
@@ -68,16 +103,15 @@ globalThis.dclass = function (dc, sources, def) {
             deepSet(allKeys, dc, def)
         }
     }
-    //*/
+    
 }
-
+//*/
 
 /////mclass
 const mclassConstructProxy = {
     construct(target, argumentsList, newTarget) {
         var obj = new target()
 		var proxy;
-		
 		
        	if (target.sources !== undefined) {
             for (var i in target.sources) {
@@ -92,12 +126,6 @@ const mclassConstructProxy = {
 		else {
 			throw new Error("mclass from all the sources can only have one proxy")
 		}
-		
-		
-        if (obj.init !== undefined) obj.init(...argumentsList)
-		if(proxy!==undefined) return new Proxy(obj, proxy)
-		
-		
 		////check needed
 		for(var i in target.needed) {
 			if(obj[i]==undefined) {
@@ -105,6 +133,8 @@ const mclassConstructProxy = {
 				
 			}
 		}
+		if (obj.init !== undefined) obj.init(...argumentsList)
+		if(proxy!==undefined) return new Proxy(obj, proxy)
 		
         return obj
     }
@@ -115,7 +145,10 @@ globalThis.mclass = function (def) {
 
     //check overrides
     var funcr = {}
+	var funce = {}
 	var needed={}
+	var expandobj={}
+	
 
     if (def.sources!==undefined) {
         for (var skey in def.sources) {
@@ -124,37 +157,51 @@ globalThis.mclass = function (def) {
             var allKeys = getAllKeys(source.prototype, { constructor: true, init:true })
             //check overrides
             var override = source.override ? source.override : {}
+			var expandable = source.expandable ? source.expandable : {}
 
             for (var key in allKeys) {
-                if (funcr[key] !== undefined && override[key] == undefined) {
+                if (funcr[key] !== undefined 
+				&& override[key] == undefined 
+				&& expandable[key] == undefined
+				) {
                     throw new Error(
-                        `Overlay classes ${skey} Clobber on ${key} is not overrideable`
+                        `Overlay classes ${skey} Clobber on ${key} is not overrideable. Need to be added to override or expandable (for objects and arrays). `
                     )
                 }
                 if (override[key]) funcr[key] = true
                 else funcr[key] = false
-            }
+				
+				if(expandable[key]) funce[key] = true
+				else funce[key] = false
+            } 
 			
-            deepSet(allKeys, dc.prototype, source.prototype)
+            deepSet(allKeys, dc.prototype, source.prototype, expandable)
 			
-			if(source.needed !=undefined) {
+			if(source.needed !==undefined) {
 				for(var i in source.needed){
 					needed[i] = source.needed[i]
 				} 
 			}
+			
+			
+			
+			
         }
     }
 
     {
         var allKeys = getAllKeys(def.prototype, { constructor: true })
-
+		
         for (var key in allKeys) {
-            if (funcr[key] !== undefined && !funcr[key]) {
-                throw new Error(`Clobber on ${key} is not overrideable`)
+            if (funcr[key]!== undefined 
+			&& !funcr[key] 
+			&& funce[key]!==undefined
+			&& !funce[key]) {
+                throw new Error(`Clobber on ${key} is not overrideable. Need to be added to override or expandable (for objects and arrays).`)
             }
         }
 
-        deepSet(allKeys, dc.prototype, def.prototype)
+        deepSet(allKeys, dc.prototype, def.prototype, funce)
 
         {
             var allKeys = getAllKeys(def, { prototype: true })

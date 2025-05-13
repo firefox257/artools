@@ -1,66 +1,53 @@
-////
-require('./utils.js')
 
 
-
-function try1() {
+globalThis.Msgc = (() => {
+    var calls = {}
+    var o = (id, ...args) => {
+        if (calls[id]) {
+            var a = calls[id]
+            var l = a.length
+			var reta=[]
+            for (var i = 0; i < l; i++) {
+                var ret = a[i].apply(null, args)
+				if(ret!==undefined) reta.push(ret)
+            }
+			return reta
+        }
+    }
+    o.add = (id, func) => {
+        if (!calls[id]) calls[id] = []
+        calls[id].push(func)
+    }
+    o.remove = (id, func) => {
+        var a = calls[id]
+        var l = a.length
+        for (var i = 0; i < l; i++) {
+            if (a[i] === func) {
+                calls[id].splice(i, 1)
+                break
+            }
+        }
+    }
+    o.runScript = (text) => {
+        var a = text
+            .split('\n')
+            .filter((n) => n.trim() !== '')
+            .map((t) => t.trim())
+        var l = a.length
+        for (var i = 0; i < l; i++) {
+            //alert("|"+a[i]+"|");
+            eval(`o(${a[i]});`)
+        }
+    }
+    o.func = (id) => {
+        //todo add function wrapper
+        return calls[id]
+    }
 	
-}
-dclass(try1,{}, {
-	override:{
-		_x:true, 
-		hi:true
-	},
-	prototype:{
-		_x:123,
-		get x() {
-			return this._x
-		},
-		func:function() {
-			console.log(this.y)
-		}, 
-		hi:function() {
-			throw new Error("need to override hi function")
-		}
-	}
-}) 
 
-
-
-
-function try2() {
-	
-}
-dclass(try2, {try1:try1}, {
-	override:{
-		hi:true
-	},
-	prototype:{
-		y:4444,
-		//_x:333333
-		hi:function() {
-			console.log("hi try2")
-		}
-	}
-})
-
-function try3() {
-	
-}
-dclass(try3,{try2:try2}, {
-	prototype:{
-		hi:function() {
-			this.try2Super.prototype.hi.apply(this)
-			console.log("hi try3")
-		}
-	}
+    return o
 })
 
 
 
-var t2 = new try2()
-console.log("x " + t2.x)
-t2.func()
 
-var t3 = new try3()
-t3.hi()

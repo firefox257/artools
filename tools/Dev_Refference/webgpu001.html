@@ -1,0 +1,128 @@
+<!DOCTYPE html>
+<html>
+<head>
+<title>WebGPU Triangle</title>
+<style>
+  body { margin: 0; overflow: hidden; }
+  canvas { display: block; }
+</style>
+</head>
+<body>
+<canvas id="gpuCanvas"></canvas>
+<script type="module">
+
+async function initWebGPU() {
+  // 1. Get a WebGPU context from the canvas element
+  const canvas = document.getElementById('gpuCanvas');
+  if (!canvas) {
+    alert('Canvas element not found');
+    return;
+  }
+
+  const context = canvas.getContext('webgpu');
+  if (!context) {
+    alert('WebGPU not supported in this browser.');
+    return;
+  }
+
+  // 2. Request a GPU adapter
+  const adapter = await navigator.gpu?.requestAdapter();
+  if (!adapter) {
+    alert('No WebGPU adapter found.');
+    return;
+  }
+
+  // 3. Request a GPU device from the adapter
+  const device = await adapter.requestDevice();
+  if (!device) {
+    alert('No WebGPU device found.');
+    return;
+  }
+
+  // Set canvas size
+  canvas.width = window.innerWidth;
+  canvas.height = window.innerHeight;
+
+  // 4. Configure the canvas context
+  const presentationFormat = navigator.gpu.getPreferredCanvasFormat();
+  context.configure({
+    device: device,
+    format: presentationFormat,
+    alphaMode: 'premultiplied',
+  });
+
+  // 5. Create shaders (WGSL)
+  const shaderModule = device.createShaderModule({
+    label: 'Basic triangle shader',
+    code: `
+      @vertex
+      fn vs_main(@builtin(vertex_index) vert_index: u32) -> @builtin(position) vec4f {
+        var pos = array<vec2f, 3>(
+          vec2f(0.0, 0.5),   // Top center
+          vec2f(-0.5, -0.5), // Bottom left
+          vec2f(0.5, -0.5)  // Bottom right
+        );
+        return vec4f(pos[vert_index], 0.0, 1.0);
+      }
+
+      @fragment
+      fn fs_main() -> @location(0) vec4f {
+        return vec4f(1.0, 0.0, 0.0, 1.0); // Red color
+      }
+    `,
+  });
+
+  // 6. Create a render pipeline
+  const pipeline = device.createRenderPipeline({
+    label: 'Basic triangle pipeline',
+    layout: 'auto',
+    vertex: {
+      module: shaderModule,
+      entryPoint: 'vs_main',
+    },
+    fragment: {
+      module: shaderModule,
+      entryPoint: 'fs_main',
+      targets: [{ format: presentationFormat }],
+    },
+    primitive: {
+      topology: 'triangle-list',
+    },
+  });
+
+  // 7. Create a command encoder
+  const encoder = device.createCommandEncoder({ label: 'Render triangle encoder' });
+
+  // 8. Begin a render pass
+  const pass = encoder.beginRenderPass({
+    label: 'Render triangle pass',
+    colorAttachments: [
+      {
+        view: context.getCurrentTexture().createView(),
+        clearValue: { r: 0.1, g: 0.1, b: 0.1, a: 1.0 }, // Dark grey background
+        loadOp: 'clear',
+        storeOp: 'store',
+      },
+    ],
+  });
+
+  // 9. Set the render pipeline and vertex buffer (no vertex buffer needed for this simple example as position is generated in the vertex shader)
+  pass.setPipeline(pipeline);
+
+  // 10. Draw
+  pass.draw(3); // Draw 3 vertices
+
+  // 11. End the render pass
+  pass.end();
+
+  // 12. Submit the command buffer to the device queue
+  device.queue.submit([encoder.finish()]);
+
+  console.log("WebGPU triangle rendered!");
+}
+
+initWebGPU();
+
+</script>
+</body>
+</html>

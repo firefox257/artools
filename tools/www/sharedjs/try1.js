@@ -3,6 +3,7 @@ require('./utils.js')
 
 
 const try1 =mclass({
+	className:"try1",
 	expandable:{
 		obj:true
 	},
@@ -11,12 +12,19 @@ const try1 =mclass({
 	},
 	prototype: {
 		x:111,
-		obj:[1]
+		init(x, y){
+			console.log("init try1 x:"+ x+ " y:"+y)
+		},
+		obj:{
+			x:0,
+			y:0
+		}
 	}
 })
 
 
 const try2 = mclass({
+	className:"try2",
 	expandable:{
 		obj:true
 	},
@@ -28,12 +36,19 @@ const try2 = mclass({
 	},
 	prototype: {
 		x:222, 
-		obj:[2]
+		init(){
+			try1.prototype.init.apply(this, arguments)
+			console.log("init try2")
+		},
+		obj:{
+			title:"title"
+		}
 	}
 })
 
 
 const try3 = mclass({
+	className:"try3",
 	expandable:{
 		obj:true
 	},
@@ -45,7 +60,11 @@ const try3 = mclass({
 	},
 	prototype: {
 		x:333,
-		obj:["bla"],
+		obj:{},
+		init(){
+			try2.prototype.init.apply(this, arguments)
+			console.log("init try3")
+		},
 		out() {
 			for(var i in this.obj) {
 				console.log(i +":" + this.obj[i])
@@ -55,9 +74,15 @@ const try3 = mclass({
 	}
 })
 
-var t = new try3()
+var t = new try3(22,33)
 t.out()
 
+class ttry1 {
+	
+}
+var tt = new ttry1
+
+console.log(t.constructor.className)
 
 //*/
 

@@ -133,7 +133,11 @@ const mclassConstructProxy = {
 				
 			}
 		}
+		
+		
+		
 		if (obj.init !== undefined) obj.init(...argumentsList)
+		
 		if(proxy!==undefined) return new Proxy(obj, proxy)
 		
         return obj
@@ -182,9 +186,6 @@ globalThis.mclass = function (def) {
 					needed[i] = source.needed[i]
 				} 
 			}
-			
-			
-			
 			
         }
     }
@@ -288,32 +289,75 @@ globalThis.deepClone = function (source, visited = new WeakMap()) {
 }
 
 ///////////
-globalThis.$msgc = (() => {
-    var calls = {}
-    var o = (id, ...args) => {
-        if (calls[id]) {
-            var a = calls[id]
-            var l = a.length
-            for (var i = 0; i < l; i++) {
-                a[i].apply(null, args)
-            }
-        }
-    }
-    o.add = (id, func) => {
-        if (!calls[id]) calls[id] = []
-        calls[id].push(func)
-    }
-    o.remove = (id, func) => {
-        var a = calls[id]
-        var l = a.length
-        for (var i = 0; i < l; i++) {
-            if (a[i] === func) {
-                calls[id].splice(i, 1)
-                break
-            }
-        }
-    }
-    o.run = (text) => {
+
+
+globalThis.Msgc = function() {
+	
+	
+	var calls={}
+	function o (id, ...args) {
+		return calls[id].func(...args)
+	}
+	o.func= function(id) {
+		if(calls[id] == undefined) {
+			throw new Error(`msgc id ${id} is not defined`)
+		}
+		return calls[id].func
+	}
+	o.set = function(id, func) {
+		if(!calls[id] && typeof calls[id] !=="function") {
+			calls[id]={
+				func:func,	
+				remove() {
+					o[id]= undefined
+				}
+			}//end calls setup single
+		} else {
+			calls[id].func=func
+		}
+	}
+	o.add = function(id, func) {
+		if(!calls[id] &&  !Array.isArray(calls[id])) {
+			
+			
+			var self = calls[id]={
+				funcs:[func],	
+				func(...args) {
+					
+					var reta =[]
+					var funcs=self.funcs
+					
+					var l = funcs.length
+					
+					for(var i=0; i<l;i++) {
+						var ret= funcs[i].apply(null, args)
+						if(ret !== undefined) reta.push(ret)
+					}
+					return reta
+				},
+				remove(func) {
+					var a = self.funcs
+					var l = a.length
+					for (var i = 0; i < l; i++) {
+						if (a[i] === func) {
+							calls[id].splice(i, 1)
+							break
+						}
+					}
+				}
+			}//end calls setup single
+		} else {
+			calls[id].funcs.push(func)
+		}
+	}
+	o.remove = function(id, func) {
+		calls[id].remove(func)
+	}
+	o.removeAll = function(id) {
+		calls[id] = undefined
+	}
+	
+	o.runScript = function(text) {
         var a = text
             .split('\n')
             .filter((n) => n.trim() !== '')
@@ -321,17 +365,21 @@ globalThis.$msgc = (() => {
         var l = a.length
         for (var i = 0; i < l; i++) {
             //alert("|"+a[i]+"|");
-            eval(`$msgc(${a[i]});`)
+            eval(`o(${a[i]});`)
         }
     }
-    o.func = (id) => {
-        //todo add function wrapper
-        return calls[id]
-    }
+	//*/
+	
+	return o
+	
+}
 
-    return o
-})()
 
+globalThis.$msgc =Msgc()
+
+
+
+/*
 globalThis.deepClone = (source, visited = new WeakMap()) => {
     if (source === null || typeof source !== 'object') {
         return source
@@ -393,7 +441,7 @@ globalThis.deepClone = (source, visited = new WeakMap()) => {
 
     return copy
 }
-
+*/
 function funcrtID() {
     return funcrtID.atid++
 }
@@ -434,6 +482,7 @@ globalThis.setArray = function (a1, a2) {
 }
 
 globalThis.Events = mclass({
+	className:"Events",
 	proxy: {
 		get(obj, key, receiver) {
 				 return obj._events[key]? obj._events[key] : obj._events[key] = (()=>{
@@ -444,10 +493,10 @@ globalThis.Events = mclass({
 						})
 					}
 					
-					f.subscribe= function(func) {
+					f.add= function(func) {
 						list.push(func)
 					}
-					f.unsubscribe= function(func) {
+					f.remove= function(func) {
 						list=list.filter(i=> i!==func)
 					}
 					return f

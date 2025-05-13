@@ -17,210 +17,168 @@
             }
         </style>
     </head>
-    <script type="importmap" src="importmap.json"></script>
+    <script type="importmap">
+	{
+    	"imports": {
+       		"three": "./threejs/build/three.module.js",
+        	"three/addons/": "./threejs/examples/jsm/",
+			"globals": "./js/globals.js",
+			"sharedUtils": "./sharedjs/utils.js",
+			"ux": "./ui/UX.js"
+    	}
+	}
+	</script>
 
     <body>
         <canvas class="full"></canvas>
     </body>
     <script type="module">
         import 'globals'
-        import 'sharedUtils'
-        import { mm2px, px2mm } from 'ux'
-
-        const StyleProxy = mclass({
-            proxy: {
-                get(obj, key) {
-                    return obj._style[key]
-                },
-                set(obj, key, v) {
-                    var s = obj._style[key]
-                    if (s !== undefined) {
-                        var changed = false
-                        if (Array.isArray(s)) {
-                            var l = s.length
-                            if (v.length < l) {
-                                l = v.length
-                            }
-                            for (var i = 0; i < l; i++) {
-                                if (v[i] !== undefined) {
-                                    if (s[i] !== v[i]) {
-                                        changed = true
-                                        s[i] = v[i]
-                                    }
-                                }
-                            }
-                        } else {
-                            if (s !== v) {
-                                changed = true
-                                s = v
-                            }
-                        }
-                        if (changed) {
-                            obj._style[key] = s
-                            obj._events.onStyleChange()
-                        }
-                    } //end if
-                } //end set
-            },
-            prototype: {
-                _style: undefined,
-                _events: undefined,
-                init(argobj) {
-                    if (
-                        argobj == undefined ||
-                        argobj.style == undefined ||
-                        argobj.events == undefined
-                    ) {
-                        throw new Error(
-                            'need to define an argument object that has style defaults and events object defined'
-                        )
-                    }
-                    this._style = argobj.style
-                    this._events = argobj.events
-                }
-            }
-        }) //end style proxy
-        const StyleOverlay = mclass({
-            needed: {
-                _style: 'Need to implement _style object for styles to work',
-                _events: 'Need to implement _events object'
-            },
-            prototype: {
-                _styleProxy: undefined,
-                //_style: undefined,
-                //_events: undefined,
-                init() {
-                    alert('at1')
-                    this._styleProxy = new StyleProxy({
-                        style: this._style,
-                        events: this._events
-                    })
-                },
-                get style() {
-                    return this._styleProxy //deepClone(this._style)
-                },
-                set style(value) {
-                    var style = this._style
-                    for (var i in value) {
-                        var s = style[i]
-                        var v = value[i]
-
-                        if (s !== undefined && v !== undefined) {
-                            var changed = false
-                            if (Array.isArray(s)) {
-                                var l = s.length
-                                if (v.length < l) {
-                                    l = v.length
-                                }
-                                for (var i = 0; i < l; i++) {
-                                    if (v[i] !== undefined) {
-                                        if (s[i] !== v[i]) {
-                                            changed = true
-                                            s[i] = v[i]
-                                        }
-                                    }
-                                }
-                            } else {
-                                if (s !== v) {
-                                    changed = true
-                                    s = v
-                                }
-                            }
-
-                            if (changed) {
-                                this._style[i] = s
-                                this._events.onStyleChange()
-                            }
-                        } //end if
-                    }
-                } //end set,
-            }
-        })
-
-        //*/
+		import 'sharedUtils'
+        import { mm2px, px2mm, StyleOverlay} from 'ux'
+		
+		
+        const World = mclass({
+			prototype:{
+				
+			}
+		})
 		
 		
 		
-		
-        const WindowOverlay = mclass({
+		const WindowOverlay = mclass({
 			expandable:{
 				_style:true
 			},
 			needed: {
-				_calcSize:"Need to implement _calcSize for the compnent"
+				render:"Need to implement function render the object onto its canvas"
+				
 			},
-            override: {
+			override: {
                 _style: true
             },
-            sources: {
+			sources: {
                 StyleOverlay: StyleOverlay
             },
-            prototype: {
-                _events: new Events(),
+			prototype: {
+				_events: new Events(),
                 _style: {
-                    margin: [0, 0, 0, 0],
-                    padding: [0, 0, 0, 0],
-                    border: [0, 'solid', 'rgba(0,0,0,0)'],
-                    roundCorners: [0, 0, 0, 0],
                     expand: [0, 0, 0, 0],
                     size: [null, null],
                     minSize: [null, null],
                     maxSize: [null, null]
                 },
+				init() {
+					StyleOverlay.prototype.init.apply(this, arguments)
+				},
+				get events() {
+					return this._events
+                }
+				
+			}
+			
+			//
+		})
+		
+        
+		
+		
+		//todo finish up on canvas items
+		/*
+        const WindowCanvasOverlay = mclass({
+			
+            needed: {
+				_calcCanvasSize:"Need to implement _calcCanvasSize that updates preffered size for the compnent"
+			},
+			sources: {
+				WindowOverlay:WindowOverlay
+			},
+			expandable:{
+				_style:true
+			},
+            prototype: {
+                
 				_canvas:undefined,
 				_ctx:undefined,
-				_preferedSize:[0,0],
-				get preferedSize() {
-					return preferedSize.slice()
-				},
+				
                 init() {
+					WindowOverlay.prototype.init.apply(this, arguments)
 					this._initCanvas()
 				},
+				
+				_preferedCanvasSize:[0,0],
+				get preferedCanvasSize() {
+					return preferedCanvasSize.slice()
+				},
+				
                 _initCanvas() {
 					
 					this._canvas = document.createElement('canvas')
                     this._ctx = this._canvas.getContext('2d')
-					this._calcSize()
-					this._canvas.width = this._preferedSize[0]
-					this._canvas.height = this._preferedSize[1]
-					//*/
+					this._recalculate()
+					
 				},
-                get events() {
-                    return this._events
-                }
+                
+				_recalculate() {
+					this._calcCanvasSize()
+					this._canvas.width = this._preferedCanvasSize[0]
+					this._canvas.height = this._preferedCanvasSize[1]
+					this._ctx.save()
+					this.render()
+					this._ctx.restore()
+				}
             }
         })
 		
-		
 		const WText = mclass({
 			sources: {
-				WindowOverlay:WindowOverlay
+				WindowCanvasOverlay:WindowCanvasOverlay
 			},
 			prototype: {
 				_style: {
+					font: "Arial",
 					fontColor:"rgba(255,255,255,1.0)",
-					fontSize:23
+					fontSize:mm2px(4)
 				},
-				_calcSize() {
-					return [0,0]
+				_text:"",
+				
+				init(obj){
+					WindowCanvasOverlay.prototype.init.apply(this, arguments)
+					
+					if(obj !== undefined && obj.text!==undefined ) {
+						this._text = obj.text
+					}
+					
+				},
+				_calcCanvasSize() {
+					this._ctx.font= `${this.style.fontSize} ${this.style.font}`
+					var w= this._ctx.measureText(this._text)
+					this._preferedSize=[w, this.style.fontSize]
+					
+				},
+				render() {
+					
+					this._ctx.font = `${this._style.fontSize}px ${this._style.font}`;
+    				this._ctx.textAlign = 'left';
+    				this._ctx.textBaseline = 'top';
+					this._ctx.fillStyle = this._style.fontColor
+					this._ctx.fillText(this._text, 0, 0);
+
+					
+					
 				}
 			}
 		})
-		//*/
+		
 		
 		
         try {
-            var w = new WText()
-            w.events.onStyleChange.subscribe(() => {
-                alert('changes')
-            })
-            w.style = {
-                padding: [0, null, 0, 0]
-            }
+            var w = new WText({text:"hi there"})
+			
         } catch (err) {
             alert(err)
         }
-
+	
         //*/
         alert('done')
     </script>

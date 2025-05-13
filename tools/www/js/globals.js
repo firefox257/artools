@@ -8,10 +8,3 @@ globalThis.$q = (path) => {
 globalThis.$qa = (path) => {
     return document.querySelectAll(path)
 }
-
-
-
-//*/
-
-
-console.log("end")

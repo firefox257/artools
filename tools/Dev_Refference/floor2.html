@@ -1,0 +1,315 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Three.js Shader Water Floor with Grid Lines and Fog</title>
+    <style>
+        body { margin: 0; }
+        canvas { display: block; }
+    </style>
+</head>
+<body>
+    <script type="module">
+        import * as THREE from './build/three.module.js';
+        //import { OrbitControls } from 'https://cdn.jsdelivr.net/npm/three@0.164.1/examples/jsm/controls/OrbitControls.js';
+
+        // Set up the scene
+        const scene = new THREE.Scene();
+        const fogColor = new THREE.Color(0xcce0ff); // Light blue fog color
+        scene.background = fogColor; // Set background to fog color
+        // Fog is handled in the shader now
+        // scene.fog = new THREE.Fog(fogColor, 50, 150);
+
+        // Set up the camera
+        const camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
+        camera.position.set(50, 50, 50); // Position the camera
+        camera.lookAt(0, 0, 0); // Make the camera look at the origin
+
+        // Set up the renderer
+        const renderer = new THREE.WebGLRenderer({ antialias: true }); // Added antialiasing
+        renderer.setSize(window.innerWidth, window.innerHeight);
+        document.body.appendChild(renderer.domElement);
+
+        // Add OrbitControls for interaction
+        /*const controls = new OrbitControls(camera, renderer.domElement);
+        controls.enableDamping = true; // Soften camera movements
+        controls.dampingFactor = 0.25;
+        controls.screenSpacePanning = false;
+        controls.maxPolarAngle = Math.PI / 2; // Limit vertical rotation
+*/
+        // Add lighting (used in the shader)
+        const ambientLightColor = new THREE.Color(0xffffff);
+        const ambientLightIntensity = 0.5;
+
+        const directionalLightColor = new THREE.Color(0xffffff);
+        const directionalLightIntensity = 0.8;
+        const directionalLightPosition = new THREE.Vector3(1, 1, 1).normalize();
+
+        // Define the shader source code for the water effect
+        const waterVertexShader = `
+            uniform float u_time;
+            uniform float u_wave_frequency;
+            uniform float u_wave_amplitude;
+
+            varying vec3 vNormal;
+            varying vec3 vViewPosition;
+            varying vec3 vWorldPosition;
+            varying vec2 vUv;
+
+            // Basic Simplex Noise function (needs to be included in both shaders if used for displacement in vertex and normal in fragment)
+            vec3 permute(vec3 x) { return mod(((x*34.0)+1.0)*x, 289.0); }
+            float snoise(vec2 v) {
+                const vec4 C = vec4(0.211324865405187, 0.366025403784439, -0.577350269189626, 0.024390243902439);
+                vec2 i = floor(v + dot(v, C.xx));
+                vec2 x0 = v - i + dot(i, C.xx);
+                vec2 i1;
+                i1 = (x0.x > x0.y) ? vec2(1.0, 0.0) : vec2(0.0, 1.0);
+                vec4 x12 = x0.xyxy + C.yyyy * i1.xyxy + C.zzzz;
+                x12.xy = x12.xy - dot(x12.xy, C.xx);
+                x12.zw = x12.zw - dot(x12.zw, C.xx);
+                vec3 i_ = permute(permute(i.x + vec3(0.0, i1.x, 1.0)) + i.y + vec3(0.0, i1.y, 1.0));
+                vec3 x0_ = x0.xyw - C.www;
+                vec3 x1_ = x12.zww + C.www;
+                vec3 x2_ = x12.yzw + 0.5 * C.www;
+                vec3 gi0 = mod(i_, 8.0);
+                vec3 gi1 = floor(i_ / 8.0);
+                vec3 gi4 = vec3(1.0, 1.0, 1.0) - abs(gi0 - gi1);
+                vec3 nz = gi0 - floor(gi0 / 2.0) * 2.0;
+                vec3 onz = vec3(1.0) - nz;
+                vec3 anz = gi0 - floor(gi0 / 2.0) * 6.0;
+                vec3 s = vec3(anz.x < 0.0 ? -1.0 : anz.x > 0.0 ? 1.0 : 0.0);
+                vec3 sh = s * gi4;
+                vec4 dx = vec4(x0_.x, x1_.x, x2_.x, x12.x);
+                vec4 dy = vec4(x0_.y, x1_.y, x2_.y, x12.y);
+                vec4 dz = vec4(0.0, 0.0, 0.0, 1.0) * vec4(sh.x, sh.y, sh.z, anz.w) + vec4(onz.x, onz.y, onz.z, anz.w) - vec4(nz.x, nz.y, nz.z, nz.w);
+                vec4 gx = vec4(dx.x * nz.x + dy.x * onz.x + dz.x * sh.x, dx.y * nz.y + dy.y * onz.y + dz.y * sh.y, dx.z * nz.z + dy.z * sh.z, dx.w * nz.w + dy.w * onz.w + dz.w * sh.w);
+                vec3 gy = permute(permute(i.y + vec3(0.0, i1.y, 1.0)) + i.x + vec3(0.0, i1.x, 1.0));
+                vec3 g0 = vec3(gy.x < 4.0 ? -1.0 : 1.0);
+                vec3 g1 = vec3(gy.y < 4.0 ? -1.0 : 1.0);
+                vec3 g2 = vec3(gy.z < 4.0 ? -1.0 : 1.0);
+                vec3 sz = vec3(0.5) * (g0 + g1 + g2) - vec3(1.0);
+                vec3 g_x = (sz.x < -0.5 ? -1.0 : sz.x > 0.5 ? 1.0 : 0.0);
+                vec3 g_y = (sz.y < -0.5 ? -1.0 : sz.y > 0.5 ? 1.0 : 0.0);
+                vec3 g_z = (sz.z < -0.5 ? -1.0 : sz.z > 0.5 ? 1.0 : 0.0);
+                vec3 gx_ = vec3(g_x.x * gx.x, g_x.y * gx.y, g_x.z * gx.z) + vec3(g_y.x * gy.x, g_y.y * gy.y, g_y.z * gy.z) + vec3(g_z.x * dz.x, g_z.y * dz.y, g_z.z * dz.z);
+                vec4 grad = vec4(gx_.x, gx_.y, gx_.z, gx.w);
+                vec3 m = max(0.5 - vec3(dot(x0_, x0_), dot(x1_, x1_), dot(x2_, x2_)), 0.0);
+                m = m * m;
+                return dot(m * m, vec3(dot(grad.xy, vec2(x0_.x, x0_.y)), dot(grad.zw, vec2(x1_.x, x1_.y)), dot(vec2(grad.z, grad.w), vec2(x2_.x, x2_.y))));
+            }
+
+
+            void main() {
+                vec3 newPosition = position;
+
+                // Animate the vertex position based on noise for simple waves
+                float noiseValue = snoise(newPosition.xz * u_wave_frequency + u_time);
+                newPosition.y += noiseValue * u_wave_amplitude;
+
+                vec4 mvPosition = modelViewMatrix * vec4(newPosition, 1.0);
+                vViewPosition = -mvPosition.xyz;
+                vWorldPosition = (modelMatrix * vec4(newPosition, 1.0)).xyz; // Pass world position for fragment calculations
+                vNormal = normalize(normalMatrix * normal); // Pass normal (without noise displacement affecting it yet)
+                vUv = uv; // Pass UV coordinates if needed for textures or other effects
+
+                gl_Position = projectionMatrix * mvPosition;
+            }
+        `;
+
+        const waterFragmentShader = `
+            uniform vec3 u_water_color;
+            uniform vec3 u_sky_color; // For simplified reflection
+            uniform vec3 u_ambient_light_color;
+            uniform float u_ambient_light_intensity;
+            uniform vec3 u_directional_light_color;
+            uniform float u_directional_light_intensity;
+            uniform vec3 u_directional_light_position;
+            uniform vec3 u_fog_color;
+            uniform float u_fog_near;
+            uniform float u_fog_far;
+            uniform float u_time;
+            uniform float u_wave_frequency; // Needs to match vertex shader for normal perturbation
+            uniform float u_wave_amplitude; // Needs to match vertex shader for normal perturbation
+            uniform float u_fresnel_bias;
+            uniform float u_fresnel_scale;
+            uniform float u_fresnel_power;
+
+            varying vec3 vNormal;
+            varying vec3 vViewPosition;
+            varying vec3 vWorldPosition;
+            varying vec2 vUv;
+
+            // Basic Simplex Noise function (same as vertex shader)
+            vec3 permute(vec3 x) { return mod(((x*34.0)+1.0)*x, 289.0); }
+            float snoise(vec2 v) {
+                const vec4 C = vec4(0.211324865405187, 0.366025403784439, -0.577350269189626, 0.024390243902439);
+                vec2 i = floor(v + dot(v, C.xx));
+                vec2 x0 = v - i + dot(i, C.xx);
+                vec2 i1;
+                i1 = (x0.x > x0.y) ? vec2(1.0, 0.0) : vec2(0.0, 1.0);
+                vec4 x12 = x0.xyxy + C.yyyy * i1.xyxy + C.zzzz;
+                x12.xy = x12.xy - dot(x12.xy, C.xx);
+                x12.zw = x12.zw - dot(x12.zw, C.xx);
+                vec3 i_ = permute(permute(i.x + vec3(0.0, i1.x, 1.0)) + i.y + vec3(0.0, i1.y, 1.0));
+                vec3 x0_ = x0.xyw - C.www;
+                vec3 x1_ = x12.zww + C.www;
+                vec3 x2_ = x12.yzw + 0.5 * C.www;
+                vec3 gi0 = mod(i_, 8.0);
+                vec3 gi1 = floor(i_ / 8.0);
+                vec3 gi4 = vec3(1.0, 1.0, 1.0) - abs(gi0 - gi1);
+                vec3 nz = gi0 - floor(gi0 / 2.0) * 2.0;
+                vec3 onz = vec3(1.0) - nz;
+                vec3 anz = gi0 - floor(gi0 / 2.0) * 6.0;
+                vec3 s = vec3(anz.x < 0.0 ? -1.0 : anz.x > 0.0 ? 1.0 : 0.0);
+                vec3 sh = s * gi4;
+                vec4 dx = vec4(x0_.x, x1_.x, x2_.x, x12.x);
+                vec4 dy = vec4(x0_.y, x1_.y, x2_.y, x12.y);
+                vec4 dz = vec4(0.0, 0.0, 0.0, 1.0) * vec4(sh.x, sh.y, sh.z, anz.w) + vec4(onz.x, onz.y, onz.z, anz.w) - vec4(nz.x, nz.y, nz.z, nz.w);
+                vec4 gx = vec4(dx.x * nz.x + dy.x * onz.x + dz.x * sh.x, dx.y * nz.y + dy.y * onz.y + dz.y * sh.y, dx.z * nz.z + dy.z * sh.z, dx.w * nz.w + dy.w * onz.w + dz.w * sh.w);
+                vec3 gy = permute(permute(i.y + vec3(0.0, i1.y, 1.0)) + i.x + vec3(0.0, i1.x, 1.0));
+                vec3 g0 = vec3(gy.x < 4.0 ? -1.0 : 1.0);
+                vec3 g1 = vec3(gy.y < 4.0 ? -1.0 : 1.0);
+                vec3 g2 = vec3(gy.z < 4.0 ? -1.0 : 1.0);
+                vec3 sz = vec3(0.5) * (g0 + g1 + g2) - vec3(1.0);
+                vec3 g_x = (sz.x < -0.5 ? -1.0 : sz.x > 0.5 ? 1.0 : 0.0);
+                vec3 g_y = (sz.y < -0.5 ? -1.0 : sz.y > 0.5 ? 1.0 : 0.0);
+                vec3 g_z = (sz.z < -0.5 ? -1.0 : sz.z > 0.5 ? 1.0 : 0.0);
+                vec3 gx_ = vec3(g_x.x * gx.x, g_x.y * gx.y, g_x.z * gx.z) + vec3(g_y.x * gy.y, g_y.y * gy.y, g_y.z * gy.z) + vec3(g_z.x * dz.x, g_z.y * dz.y, g_z.z * dz.z);
+                vec4 grad = vec4(gx_.x, gx_.y, gx_.z, gx.w);
+                vec3 m = max(0.5 - vec3(dot(x0_, x0_), dot(x1_, x1_), dot(x2_, x2_)), 0.0);
+                m = m * m;
+                return dot(m * m, vec3(dot(grad.xy, vec2(x0_.x, x0_.y)), dot(grad.zw, vec2(x1_.x, x1_.y)), dot(vec2(grad.z, grad.w), vec2(x2_.x, x2_.y))));
+            }
+
+
+            void main() {
+                // Animate normal perturbation based on noise
+                // Use a slightly different frequency or offset for a more complex wave pattern
+                float noiseValue = snoise(vWorldPosition.xz * u_wave_frequency * 0.8 + u_time * 0.5);
+                vec3 perturbedNormal = normalize(vNormal + vNormal * noiseValue * u_wave_amplitude * 5.0); // Adjust multiplier for normal perturbation intensity
+
+                // Simple Lambertian lighting using perturbed normal
+                vec3 ambient = u_ambient_light_color * u_ambient_light_intensity;
+
+                vec3 lightDirection = normalize(u_directional_light_position - vWorldPosition); // Direction from fragment to light
+                float diff = max(dot(perturbedNormal, lightDirection), 0.0);
+                vec3 diffuse = u_directional_light_color * u_directional_light_intensity * diff;
+
+                vec3 light = ambient + diffuse;
+
+                // Fresnel effect for reflection
+                vec3 viewDirection = normalize(vViewPosition);
+                float fresnel = u_fresnel_bias + u_fresnel_scale * pow(1.0 + dot(viewDirection, perturbedNormal), u_fresnel_power);
+
+                // Mix water color and reflection based on Fresnel
+                vec3 reflection = u_sky_color; // Simplified reflection is just the sky color
+                vec3 baseColor = u_water_color;
+
+                vec3 finalColor = mix(baseColor * light, reflection * light, fresnel); // Apply light to both base color and reflection
+
+                // Apply fog
+                // gl_FragCoord.z / gl_FragCoord.w gives depth in perspective projection
+                float depth = gl_FragCoord.z / gl_FragCoord.w;
+                float fogFactor = smoothstep(u_fog_near, u_fog_far, depth);
+                finalColor = mix(finalColor, u_fog_color, fogFactor);
+
+                gl_FragColor = vec4(finalColor, 1.0);
+            }
+        `;
+
+        // Create uniforms to pass data to the shader
+        const waterUniforms = {
+            u_water_color: { value: new THREE.Color(0x0077be) }, // Blue water color
+            u_sky_color: { value: new THREE.Color(0xcce0ff) }, // Match fog color for simplified reflection
+            u_ambient_light_color: { value: ambientLightColor },
+            u_ambient_light_intensity: { value: ambientLightIntensity },
+            u_directional_light_color: { value: directionalLightColor },
+            u_directional_light_intensity: { value: directionalLightIntensity },
+            u_directional_light_position: { value: directionalLightPosition },
+            u_fog_color: { value: fogColor },
+            u_fog_near: { value: 50 },
+            u_fog_far: { value: 150 },
+            u_time: { value: 0.0 },
+            u_wave_frequency: { value: 0.1 }, // Control wave size
+            u_wave_amplitude: { value: 0.5 }, // Control wave height
+            u_fresnel_bias: { value: 0.0 },
+            u_fresnel_scale: { value: 1.0 },
+            u_fresnel_power: { value: 2.0 } // Control Fresnel effect intensity
+        };
+
+        // Create the floor plane geometry (increase segments for smoother waves if displacing vertices)
+        const floorGeometry = new THREE.PlaneGeometry(100, 100, 200, 200); // Increased segments
+
+        // Create the ShaderMaterial
+        const waterMaterial = new THREE.ShaderMaterial({
+            uniforms: waterUniforms,
+            vertexShader: waterVertexShader,
+            fragmentShader: waterFragmentShader,
+            side: THREE.DoubleSide,
+            transparent: true, // Water can be semi-transparent
+            // lights: false, // We handle lighting in the shader
+            // fog: false // We handle fog in the shader
+        });
+
+        // Create the floor mesh and add to the scene
+        const floor = new THREE.Mesh(floorGeometry, waterMaterial);
+        floor.rotation.x = Math.PI / 2; // Rotate the plane to be horizontal
+        scene.add(floor);
+
+        // Create the grid of lines (horizontal plus signs)
+        const lineMaterial = new THREE.LineBasicMaterial({ color: 0x000000 }); // Black lines
+        const halfLineLength = 0.5; // Half the length of each segment of the plus
+
+        const gridSize = 100; // The size of the grid area (should match floor size)
+        const gridSpacing = 5; // Spacing between plus signs
+        const numberOfItems = (gridSize / gridSpacing) + 1; // Number of plus signs along each axis
+
+        for (let i = 0; i < numberOfItems; i++) {
+            for (let j = 0; j < numberOfItems; j++) {
+                // Create a geometry for the horizontal plus sign
+                const points = [];
+                // Horizontal segment (along x-axis)
+                points.push(new THREE.Vector3(-halfLineLength, 0, 0));
+                points.push(new THREE.Vector3(halfLineLength, 0, 0));
+                // Vertical segment (along z-axis)
+                points.push(new THREE.Vector3(0, 0, -halfLineLength));
+                points.push(new THREE.Vector3(0, 0, halfLineLength));
+
+                const lineGeometry = new THREE.BufferGeometry().setFromPoints(points);
+
+                // Use LineSegments to render independent segments (the two parts of the plus)
+                const plusSign = new THREE.LineSegments(lineGeometry, lineMaterial);
+
+                // Calculate position based on grid, centering the grid on the floor
+                const x = (i - numberOfItems / 2) * gridSpacing + gridSpacing / 2;
+                const z = (j - numberOfItems / 2) * gridSpacing + gridSpacing / 2;
+
+                plusSign.position.set(x, 0.1, z); // Position slightly above the floor
+                scene.add(plusSign);
+            }
+        }
+
+        // Animation loop
+        const clock = new THREE.Clock();
+        function animate() {
+            requestAnimationFrame(animate);
+
+            const delta = clock.getDelta();
+            // Update time uniform for animation
+            waterMaterial.uniforms.u_time.value += delta;
+
+            //controls.update(); // Update controls
+
+            renderer.render(scene, camera);
+        }
+
+        animate();
+
+        // Handle window resizing
+        window.addEventListener('resize', () => {
+            camera.aspect = window.innerWidth / window.innerHeight;
+            camera.updateProjectionMatrix();
+            renderer.setSize(window.innerWidth, window.innerHeight);
+        });
+    </script>
+</body>
+</html>

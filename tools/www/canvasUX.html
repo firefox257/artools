@@ -78,11 +78,8 @@
 					self =this
 					this._events=new EventsBus({
 						eventTarget:self,
-						eventWatchers:{
-							onStyleChange(id, v){
-								alert("style changes " + id + " " + v)
-							}
-						}
+						eventDefineWatchers:["onStyleChange"]
+						
 					})
 					
 					this._styleObserver=new PropertyObservers({
@@ -103,8 +100,29 @@
 			//
 		})
 		
-        var c = new wCompBase()
-		c.size=[123,345]
+		
+		var wTry1 = mclass({
+			expandable:{
+				_style:true
+			},
+			sources:{
+				wCompBase:wCompBase
+			},
+			prototype:{
+				_style:{
+					text:"hithere"
+				},
+				init(){
+					wCompBase.prototype.init.apply(this)
+				}
+			}
+		})
+		
+        var c = new wTry1()
+		c.events.add("onStyleChange", function(id,v){
+			alert("style changed here "+ id + " " + v)
+		})
+		c.text="bla"
 		
 		
 		

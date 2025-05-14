@@ -396,6 +396,16 @@ globalThis.EventsBus = mclass({
                     this.add(i, o.eventWatchers[i])
                 }
             }
+			
+			if (o.eventDefineWatchers !== undefined) {
+				
+				var a= o.eventDefineWatchers
+				var l = a.length
+				
+                for (var i=0;i<l;i++) {
+                    this.add(a[i])
+                }
+            }
 
             if (o.eventGlobalWatcher !== undefined) {
                 this.addGlobal(o.eventGlobalWatcher)
@@ -428,8 +438,10 @@ globalThis.EventsBus = mclass({
 				`
                 )(this._calls[id], this._globals)
             } //end if
-
-            this._calls[id].push(func)
+			
+			if(func!== undefined) {
+				this._calls[id].push(func)
+			}
         },
         remove(id, func) {
             if (this._calls[id] !== undefined) {

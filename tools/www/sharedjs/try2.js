@@ -1,6 +1,6 @@
 require('./utils.js')
-
-const EventObservers = mclass({
+/*
+const EventsBus = mclass({
     prototype: {
         _target: undefined,
         _calls: {},
@@ -79,59 +79,76 @@ const EventObservers = mclass({
         }
     }
 })
-
+//*/
+/*
 const PropertyObservers = mclass({
     prototype: {
         _target: undefined,
         _calls: {},
-		_properties:undefined,
-		_globals:[],
+        _properties: undefined,
+        _globals: [],
         init(o) {
+            if (o.propertyValues !== undefined) {
+                this._properties = o.propertyValues
+            } else {
+                this._properties = {}
+            }
+
             if (o.propertyTarget == undefined) {
                 this._target = this
             } else {
                 this._target = o.propertyTarget
             }
 
-            if (o.propertyValues!==undefined) {
-				this._properties = o.propertyValues
-            } else {
-				this._properties={}
-			}
-			
-			for(var i in this._properties){
-				this.add(i)
-			}
-			
-			if(o.propertyWatchers!==undefined) {
-				for(var i in o.propertyWatchers) {
-					this.add(i, o.propertyWatchers[i])
-				}
-			}
-			if(o.propertyGlobalWatcher!==undefined) {
-				
-				this.addGlobal(o.propertyGlobalWatcher)
-				
-			}
-			
+            for (var i in o.propertyValues) {
+                if (typeof o.propertyValues[i] == 'object') {
+                    throw new Error(
+                        'property obsevers do not support objects or arrays. use function replacers.'
+                    )
+                }
+                this.add(i)
+            }
+
+            if (o.propertyWatchers !== undefined) {
+                for (var i in o.propertyWatchers) {
+                    this.add(i, o.propertyWatchers[i])
+                }
+            }
+            if (o.propertyGlobalWatcher !== undefined) {
+                this.addGlobal(o.propertyGlobalWatcher)
+            }
         },
-        add(id, func) {
+        add(id, func, v) {
+            if (typeof v == 'object') {
+                throw new Error(
+                    'property obsevers do not support objects or arrays. use function replacers.'
+                )
+            }
+
             if (this._calls[id] == undefined) {
-               
-			   this._calls[id] = []
-			   this._target[id] = new Function(
-			   ['target', 'calls', 'globals'],
-			   `
-				var obj = {}
+                this._calls[id] = []
 				
+                new Function(
+                    ['target', 'properties', 'calls', 'globals'],
+                    `
 				Object.defineProperty(target, "${id}", {
 					
 					get() {
-						return obj.${id}
+						//todo change
+						if(typeof properties.${id} =="function") {
+							return properties.${id}(properties)
+						}
+						
+						return properties.${id}
 					}, 
 					set(v) {
 						
-						obj.${id}=v
+						if(typeof properties.${id} =="function") {
+							return properties.${id}(properties, v)
+						} else {
+							properties.${id}=v
+						}
+						
 						var l= calls.length
 						for(var i = 0; i < l; i++) {
 							calls[i](v)
@@ -147,14 +164,19 @@ const PropertyObservers = mclass({
 				
 				
 				`
-                )(this._target, this._calls[id], this._globals)
-				
-				
-				//*/
+                )(
+                    this._target,
+                    this._properties,
+                    this._calls[id],
+                    this._globals
+                )
             } //end if
-			
+
             if (func !== undefined) {
                 this._calls[id].push(func)
+            }
+            if (v !== undefined) {
+                this._target = v
             }
         },
         remove(id, func) {
@@ -169,15 +191,15 @@ const PropertyObservers = mclass({
                 }
             }
         },
-		setValues(o) {
-			for(var i in o) {
-				if(this._properties[i]==undefined) {
-					this.add(i)
-				} 
-				this._target[i]=o[i]	
-			}
-		},
-		addGlobal(func) {
+        setValues(o) {
+            for (var i in o) {
+                if (this._properties[i] == undefined) {
+                    this.add(i)
+                }
+                this._target[i] = o[i]
+            }
+        },
+        addGlobal(func) {
             this._globals.push(func)
         },
         removeGlobal(func) {
@@ -190,29 +212,37 @@ const PropertyObservers = mclass({
                 }
             }
         }
-		
     }
 })
+
 //*/
+
 var B = mclass({
     prototype: {
         _events: undefined,
-		get events() {
+        get events() {
             return this._events
         },
         _properties: undefined,
-		get properties() {
-			return this._properties
-		},
-		_backerProps:{
-			title:"",
-			x:0,
-			y:123
-			
-		},
-        
+        get properties() {
+            return this._properties
+        },
+        _backerProps: {
+            title: 'title',
+            x: 0,
+            y: 123,
+            window(p, v) {
+                if (v == undefined) {
+                    return [p.x, p.y, p.title]
+                }
+                p.x = v[0]
+                p.y = v[1]
+                p.title = v[2]
+            }
+        },
+
         init() {
-            this._events = new EventObservers({
+            this._events = new EventsBus({
                 eventTarget: this,
                 eventWatchers: {
                     onClick(v) {
@@ -220,153 +250,37 @@ var B = mclass({
                     }
                 }
             })
-            this._properties= new PropertyObservers({
-				propertyTarget:this,
-				propertyValues: this._backerProps,
-				propertyGlobalWatcher(id, v) {
-					console.log(id+" property has changed to "+v)
-				}
-				
-			})
-			
-			this._properties.add("x", (v)=> {
-				console.log("x: "+ v)
-			})
+            this._properties = new PropertyObservers({
+                propertyTarget: this,
+                propertyValues: this._backerProps,
+                propertyGlobalWatcher(id, v) {
+                    console.log(id + ' property has changed to ' + v)
+                }
+            })
         }
     }
 })
 
 var b = new B()
 
-b.onClick(123)
-
-b.x=5555
-console.log('done')
+console.log(b.window)
+b.window = [0, 0, 'hi there']
+console.log(b.window)
+console.log(b.title)
+//*/
 
 /*
-const PropertyObserversProxy = {
-    construct(target, argumentsList, newTarget) {}
-}
-
-function PropertyObservers(p) {
-    p = p ? p : {}
-    calls = {}
-    var retFunc = {
-        add(id, func) {
-            //console.log("here1")
-            if (calls[id] == undefined) {
-                calls[id] = []
-            }
-            calls[id].push(func)
-        },
-        remove(id, func) {
-            if (calls[id] !== undefined) {
-                var a = calls[id]
-                var l = a.length
-                for (var i = 0; i < l; i++) {
-                    if (a[i] === func) {
-                        calls[id].splice(i, 1)
-                        break
-                    }
-                }
-            }
-        }
-    }
-
-    var getAddRemove = function () {
-        return retFunc
-    }
-    getAddRemove.o = p
-
-    return new Proxy(getAddRemove, {
-        get(obj, key) {
-            return obj.o[key]
-        },
-        set(obj, key, v, recv) {
-            //console.log("here2 "+ key)
-			
-            obj.o[key] = v
-            var a = calls[key]
-            if (a !== undefined) {
-                var l = a.length
-                for (var i = 0; i < l; i++) {
-                    a[i](v)
-                }
-            }
-        }
-    })
-}
+var b={}
 
 
-function EventObservers(p) {
-    p = p ? p : {}
-    var calls = {}
-	var funcListCall ={}
-    var retFunc = {
-        add(id, func) {
-            //console.log("here1")
-            if (calls[id] == undefined) {
-                calls[id] = []
-				funcListCall[id] = function() {
-					var a = calls[id]
-					var l=a.length
-					for(var i= 0;i<l;i++) {
-						a[i](...arguments)
-					}
-				}
-            }
-            calls[id].push(func)
-			
-        },
-        remove(id, func) {
-            if (calls[id] !== undefined) {
-                var a = calls[id]
-                var l = a.length
-                for (var i = 0; i < l; i++) {
-                    if (a[i] === func) {
-                        calls[id].splice(i, 1)
-                        break
-                    }
-                }
-            }
-        }
-    }
-
-    var getAddRemove = function () {
-        return retFunc
-    }
-    getAddRemove.o = p
-
-    return new Proxy(getAddRemove, {
-        get(obj, key) {
-			
-            return funcListCall[key]
-        }/*,
-        set(obj, key, v, recv) {
-            //console.log("here2 "+ key)
-			
-            obj.o[key] = v
-            var a = calls[key]
-            if (a !== undefined) {
-                var l = a.length
-                for (var i = 0; i < l; i++) {
-                    a[i](v)
-                }
-            }
-        }
-    })
-}
-
-
-
-var b = EventObservers()
-
-b().add("onClick", (v)=>{
-	console.log("hee "+ v)
+Object.defineProperty(b, "x", {
+	get(){
+		console.log("get")
+		return 123
+	},
+	set(v){
+		console.log("set")
+	}
+	
 })
-
-
-
-b.onClick(123)
-
-*/
+//*/

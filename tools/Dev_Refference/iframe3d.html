@@ -1,0 +1,79 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Three.js Textured Text</title>
+    <style>
+        body { margin: 0; }
+        canvas { 
+			display: block; 
+			border:1px solid #00ff00
+		}
+		#ss{
+			font-size:20mm
+		}
+    </style>
+</head>
+<meta charset="UTF-8">
+
+<body>
+<span id="ss">blassss</span>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+
+<script>
+    // Set up the scene, camera, and renderer
+    const scene = new THREE.Scene();
+    const camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
+    const renderer = new THREE.WebGLRenderer({ antialias: true });
+    renderer.setSize(window.innerWidth, window.innerHeight);
+    document.body.appendChild(renderer.domElement);
+
+    // --- Create text on a 2D canvas ---
+    const canvas = document.createElement('canvas');
+    const context = canvas.getContext('2d');
+
+    
+    canvas.width = 800;
+    canvas.height = 600;
+
+    //draw here
+	var ss= document.querySelector("#ss")
+	canvas.drawImage(ss,0,0)
+    // --- Create a Three.js texture from the canvas ---
+    const texture = new THREE.CanvasTexture(canvas);
+    texture.needsUpdate = true; // Important for dynamic canvases
+
+    // --- Create a plane geometry and apply the texture ---
+    // The size of the plane should match the canvas size for correct aspect ratio
+    const planeWidth = canvas.width / 100; // Adjust scale as needed
+    const planeHeight = canvas.height / 100; // Adjust scale as needed
+
+    const geometry = new THREE.PlaneGeometry(planeWidth, planeHeight);
+    const material = new THREE.MeshBasicMaterial({
+        map: texture,
+        side: THREE.DoubleSide, // Render both sides of the plane
+        transparent: true // If your canvas has transparent areas
+    });
+
+    const textMesh = new THREE.Mesh(geometry, material);
+    scene.add(textMesh);
+
+    // Position the camera
+    camera.position.z = 5;
+
+    // Handle window resizing
+    window.addEventListener('resize', () => {
+        camera.aspect = window.innerWidth / window.innerHeight;
+        camera.updateProjectionMatrix();
+        renderer.setSize(window.innerWidth, window.innerHeight);
+    });
+
+    // Animation loop
+    function animate() {
+        requestAnimationFrame(animate);
+        renderer.render(scene, camera);
+    }
+    animate();
+</script>
+
+</body>
+</html>

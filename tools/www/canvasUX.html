@@ -37,7 +37,7 @@
 		import 'sharedUtils'
         import { mm2px, px2mm, StyleOverlay} from 'ux'
 		
-		
+		try{
         const World = mclass({
 			prototype:{
 				
@@ -46,12 +46,12 @@
 		
 		
 		
-		const WindowOverlay = mclass({
+		const wCompBase = mclass({
 			expandable:{
 				_style:true
 			},
 			needed: {
-				render:"Need to implement function render the object onto its canvas"
+				//render:"Need to implement function render the object onto its canvas"
 				
 			},
 			override: {
@@ -61,15 +61,38 @@
                 StyleOverlay: StyleOverlay
             },
 			prototype: {
-				_events: new Events(),
+				_events: undefined,
+				_styleObserver:undefined,
                 _style: {
-                    expand: [0, 0, 0, 0],
-                    size: [null, null],
-                    minSize: [null, null],
-                    maxSize: [null, null]
+                    width:null,
+					height:null,
+					size(p,v) {
+						if(v==undefined) {
+							return [p.width,p.height]
+						}
+						p.width=v[0]
+						p.height=v[1]
+					}
                 },
 				init() {
-					StyleOverlay.prototype.init.apply(this, arguments)
+					self =this
+					this._events=new EventsBus({
+						eventTarget:self,
+						eventWatchers:{
+							onStyleChange(id, v){
+								alert("style changes " + id + " " + v)
+							}
+						}
+					})
+					
+					this._styleObserver=new PropertyObservers({
+						propertyTarget:self,
+						propertyValues:self._style,
+						propertyGlobalWatcher(id, v) {
+							self.onStyleChange(id, v)
+						}
+					})
+					
 				},
 				get events() {
 					return this._events
@@ -80,103 +103,17 @@
 			//
 		})
 		
+        var c = new wCompBase()
+		c.size=[123,345]
+		
+		
+		
+		
         
-		
-		
-		//todo finish up on canvas items
-		/*
-        const WindowCanvasOverlay = mclass({
-			
-            needed: {
-				_calcCanvasSize:"Need to implement _calcCanvasSize that updates preffered size for the compnent"
-			},
-			sources: {
-				WindowOverlay:WindowOverlay
-			},
-			expandable:{
-				_style:true
-			},
-            prototype: {
-                
-				_canvas:undefined,
-				_ctx:undefined,
-				
-                init() {
-					WindowOverlay.prototype.init.apply(this, arguments)
-					this._initCanvas()
-				},
-				
-				_preferedCanvasSize:[0,0],
-				get preferedCanvasSize() {
-					return preferedCanvasSize.slice()
-				},
-				
-                _initCanvas() {
-					
-					this._canvas = document.createElement('canvas')
-                    this._ctx = this._canvas.getContext('2d')
-					this._recalculate()
-					
-				},
-                
-				_recalculate() {
-					this._calcCanvasSize()
-					this._canvas.width = this._preferedCanvasSize[0]
-					this._canvas.height = this._preferedCanvasSize[1]
-					this._ctx.save()
-					this.render()
-					this._ctx.restore()
-				}
-            }
-        })
-		
-		const WText = mclass({
-			sources: {
-				WindowCanvasOverlay:WindowCanvasOverlay
-			},
-			prototype: {
-				_style: {
-					font: "Arial",
-					fontColor:"rgba(255,255,255,1.0)",
-					fontSize:mm2px(4)
-				},
-				_text:"",
-				
-				init(obj){
-					WindowCanvasOverlay.prototype.init.apply(this, arguments)
-					
-					if(obj !== undefined && obj.text!==undefined ) {
-						this._text = obj.text
-					}
-					
-				},
-				_calcCanvasSize() {
-					this._ctx.font= `${this.style.fontSize} ${this.style.font}`
-					var w= this._ctx.measureText(this._text)
-					this._preferedSize=[w, this.style.fontSize]
-					
-				},
-				render() {
-					
-					this._ctx.font = `${this._style.fontSize}px ${this._style.font}`;
-    				this._ctx.textAlign = 'left';
-    				this._ctx.textBaseline = 'top';
-					this._ctx.fillStyle = this._style.fontColor
-					this._ctx.fillText(this._text, 0, 0);
-
-					
-					
-				}
-			}
-		})
-		
-		
-		
-        try {
-            var w = new WText({text:"hi there"})
-			
+            
         } catch (err) {
             alert(err)
+			alert(err.stack)
         }
 	
         //*/

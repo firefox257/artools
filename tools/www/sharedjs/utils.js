@@ -85,14 +85,24 @@ const mclassConstructProxy = {
             )
         }
         ////check needed
+		/*
         for (var i in target.needed) {
             if (obj[i] == undefined) {
                 throw new Error(target.needed[i])
             }
         }
+		//*/
 
         if (obj.init !== undefined) obj.init(...argumentsList)
 
+		////check needed
+        for (var i in target.needed) {
+            if (obj[i] == undefined) {
+                throw new Error(target.needed[i])
+            }
+        }
+		
+		
         if (proxy !== undefined) {
             var pobj = new Proxy(obj, proxy)
             return pobj
@@ -189,7 +199,7 @@ globalThis.mclass = function (def) {
 //////======
 
 globalThis.deepClone = function (source, visited = new WeakMap()) {
-    if (source === undefined || typeof source !== 'object') {
+    if (source === undefined || source==null || typeof source !== 'object') {
         return source
     }
 
@@ -368,42 +378,6 @@ globalThis.setArray = function (a1, a2) {
         }
     }
 }
-/*
-globalThis.Events = mclass({
-	className:"Events",
-	proxy: {
-		get(obj, key, receiver) {
-				 return obj._events[key]? obj._events[key] : obj._events[key] = (()=>{
-					var list =[]
-					var f = function(...args){
-						list.forEach((i)=>{
-							i(...args)
-						})
-					}
-					
-					f.add= function(func) {
-						list.push(func)
-					}
-					f.remove= function(func) {
-						list=list.filter(i=> i!==func)
-					}
-					return f
-				})()
-		}
-		
-	},
-	prototype: {
-		_events:{},
-		init() {
-			
-		},
-		toString() {
-			return this._events.toString()
-		}
-	}
-})
-
-//*/
 
 globalThis.EventsBus = mclass({
     prototype: {
@@ -505,7 +479,8 @@ globalThis.PropertyObservers = mclass({
             }
 
             for (var i in o.propertyValues) {
-                if (typeof o.propertyValues[i] == 'object') {
+				var prop = o.propertyValues[i] 
+                if (prop !==null && typeof prop == 'object') {
                     throw new Error(
                         'property obsevers do not support objects or arrays. use function replacers.'
                     )
@@ -548,12 +523,13 @@ globalThis.PropertyObservers = mclass({
 					set(v) {
 						
 						if(typeof properties.${id} =="function") {
-							return properties.${id}(properties, v)
+							properties.${id}(properties, v)
 						} else {
 							properties.${id}=v
 						}
 						
 						var l= calls.length
+						
 						for(var i = 0; i < l; i++) {
 							calls[i](v)
 						}

@@ -1,1 +1,0 @@
-require("@reactvision/react-viro")

@@ -6,5 +6,5 @@ globalThis.$q = (path) => {
 }
 
 globalThis.$qa = (path) => {
-    return document.querySelectAll(path)
+    return document.querySelectorAll(path)
 }

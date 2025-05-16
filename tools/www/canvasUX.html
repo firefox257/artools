@@ -15,126 +15,327 @@
                 width: 100%;
                 height: 100%;
             }
+			[worldview] {
+				display: inline-block;
+				
+			}
         </style>
     </head>
     <script type="importmap">
-	{
-    	"imports": {
-       		"three": "./threejs/build/three.module.js",
-        	"three/addons/": "./threejs/examples/jsm/",
-			"globals": "./js/globals.js",
-			"sharedUtils": "./sharedjs/utils.js",
-			"ux": "./ui/UX.js"
-    	}
-	}
-	</script>
+        {
+            "imports": {
+                "three": "./threejs/build/three.module.js",
+                "three/addons/": "./threejs/examples/jsm/",
+                "globals": "./js/globals.js",
+                "sharedUtils": "./sharedjs/utils.js",
+                "ux": "./ui/UX.js"
+            }
+        }
+    </script>
 
     <body>
-        <canvas class="full"></canvas>
+        <span class="full" worldview="main"></span>
     </body>
     <script type="module">
+        import * as THREE from 'three'
         import 'globals'
-		import 'sharedUtils'
-        import { mm2px, px2mm, StyleOverlay} from 'ux'
-		
-		try{
-        const World = mclass({
-			prototype:{
+        import 'sharedUtils'
+        import { mm2px, px2mm } from 'ux'
+        try {
+            
+			globalThis.globalEvents=new EventsBus()
+			
+			{
 				
+				//globalEvents.add("")
+				window.addEventListener('resize', () => {
+					
+				//globalEvents.onWindowResize(window.innerWidth, window.innerHeight)
+				//camera.aspect = window.innerWidth / window.innerHeight;
+				//camera.updateProjectionMatrix();
+				//renderer.setSize(window.innerWidth, window.innerHeight);
+				});
 			}
-		})
-		
-		
-		
-		const wCompBase = mclass({
-			expandable:{
-				_style:true
-			},
-			needed: {
-				//render:"Need to implement function render the object onto its canvas"
+			
+			
+			
+			//+++++++WorldLibrary++++++
+			{
+				var library= {}
 				
-			},
-			override: {
-                _style: true
-            },
-			sources: {
-                StyleOverlay: StyleOverlay
-            },
-			prototype: {
-				_events: undefined,
-				_styleObserver:undefined,
-                _style: {
-                    width:null,
-					height:null,
-					size(p,v) {
-						if(v==undefined) {
-							return [p.width,p.height]
-						}
-						p.width=v[0]
-						p.height=v[1]
+				$msgc.set("WorldLib set world", (name, world) =>{
+					
+					library[name]=world
+				})
+				$msgc.set("WorldLib get world", (name) => {
+					return library[name]
+				})
+				$msgc.set("WorldLib get list", () => {
+					var l=[]
+					for(var i in library) {
+						l.push(i)
 					}
-                },
-				init() {
-					self =this
-					this._events=new EventsBus({
-						eventTarget:self,
-						eventDefineWatchers:["onStyleChange"]
-						
-					})
+					return l
+				})
+			}
+			
+			
+			//+++++++WorldViewLibrary++++++
+			{
+				var library= {}
+				
+				$msgc.set("WorldViewLib set worldview", (name, world) =>{
 					
-					this._styleObserver=new PropertyObservers({
-						propertyTarget:self,
-						propertyValues:self._style,
-						propertyGlobalWatcher(id, v) {
-							self.onStyleChange(id, v)
-						}
-					})
-					
-				},
-				get events() {
-					return this._events
-                }
+					library[name]=world
+				})
+				$msgc.set("WorldViewLib get worldview", (name) => {
+					return library[name]
+				})
+				$msgc.set("WorldViewLib get list", () => {
+					var l=[]
+					for(var i in library) {
+						l.push(i)
+					}
+					return l
+				})
+				$msgc.set("WorldViewLib set size", (name, size) => {
+					library[name].size=size
+				})
+			}
+			
+			
+			
+			//+++++++SetupCanvasLib++++++
+			{
+				
+				var library= {}
+				var dom=$qa("*[worldview]");
+				var l= dom.length
+				for(var i= 0; i< l; i++) {
+					var name = dom[i].getAttribute("worldview")
+					library[name]=dom[i]
+				}
 				
 			}
 			
-			//
-		})
-		
-		
-		var wTry1 = mclass({
-			expandable:{
-				_style:true
-			},
-			sources:{
-				wCompBase:wCompBase
-			},
-			prototype:{
-				_style:{
-					text:"hithere"
+			
+			
+			var WorldView= mclass({
+				override: {
+					initCanvas:true
 				},
-				init(){
-					wCompBase.prototype.init.apply(this)
-				}
-			}
-		})
-		
-        var c = new wTry1()
-		c.events.add("onStyleChange", function(id,v){
-			alert("style changed here "+ id + " " + v)
-		})
-		c.text="bla"
-		
-		
-		
-		
-        
-            
+                prototype: {
+                    _currentWorld: null,
+                    _worlds: {},
+                    _renderer: new THREE.WebGLRenderer(),
+					_camera: undefined,
+					_propObserv:undefined,
+					get properties() {
+						return this._propOnserv
+					},
+					_properties:{
+						width:null,
+						height:null,
+						size(p,v){
+							
+						}, 
+						camFov:75,//from quest 3
+					},
+                    init() {
+						
+						
+						var self= this
+						this._propObserv=new PropertyObservers({
+							propertyTarget: self,
+							propertyValues: self._properties,
+						})
+						this.properties.add(["width","height","size"],()=>{
+							self._updateCamera()
+						})
+						
+						//var size = $msgc("setup 3d canvas", c)
+						//renderer.setSize(...size);
+						
+						
+                    },
+					
+					initCanvas(size){
+						this._renderer.setSize(...size);
+						
+					},
+					_updateCamera(){
+						
+					}
+					
+                } //end prototype
+            })
+			
+			/*
+			
+			
+			const World = mclass({
+                expandable: {
+                    _properties: true
+                },
+                prototype: {
+                    scene: new THREE.Scene(),
+                    _propObserv: undefined,
+                    _properties: {
+                        fogColor: 0x707070,
+                        fogNear: 1,
+                        fogFar: 20,
+                        fog(p, v) {
+                            if (v == undefined) {
+                                return [p.fogColor, p.fogNear, p.fogFar]
+                            }
+                            p.fogColor = v[0]
+                            p.fogNear = v[1]
+                            p.fogFar = v[2]
+                        },
+                        backgroundColor: 0x707070,
+						
+                    },
+                    init() {
+                        this._propObserv = new PropertyObserver({
+                            propertyTarget: this,
+                            propertyValues: this._properties
+                        })
+						
+						this._setUpWatchers()
+                        this._serUpFog()
+						this._setUpBackground()
+                    }, //end init
+					_setUpWatchers() {
+						var self= this
+						this._propObserv.add(["fogColor","fogNear","fogFar","fog"],
+						()=>{
+							self._setUpFog()
+						})
+						this._propObserv.add("backgroundColor",
+						()=>{
+							self._setUpBackground
+						})
+					},
+                    _setUpFog() {
+                        this._scene.fog(...this.fog)
+                    },
+					_setUpBackground() {
+						this._scene.background=this.backgroundColor
+					}
+                } //end prototype
+            })
+				
+				
+			
+			
+			
+			
+            //*/
+            /*
+                      const wBase = mclass({
+                          expandable: {
+                              _style: true,
+                              _properties: true
+                          },
+                          needed: {
+                              //render:"Need to implement function render the object onto its canvas"
+                          },
+                          override: {
+                              _style: true,
+              	_properties:true
+                          },
+                          prototype: {
+                              _events: undefined,
+							  _eventList:[
+                                          'onStyleChange',
+                                          'onClick',
+                                          'onAnimation',
+                                          'onPropertyChange'
+                                      ],
+                              _styleObserver: undefined,
+                              _style: {
+                                  width: null,
+                                  height: null,
+                                  size(p, v) {
+                                      if (v == undefined) {
+                                          return [p.width, p.height]
+                                      }
+                                      p.width = v[0]
+                                      p.height = v[1]
+                                  }
+                              },
+                              _propertiesObserver: undefined,
+                              _properties: {},
+							  
+                              init() {
+                                  self = this
+                                  this._events = new EventsBus({
+                                      eventTarget: self,
+                                      eventDefineWatchers:
+                                  })
+
+                                  this._styleObserver = new PropertyObservers({
+                                      propertyTarget: self,
+                                      propertyValues: self._style,
+                                      propertyGlobalWatcher(id, v) {
+                                          self.onStyleChange(id, v)
+                                      }
+                                  })
+
+                                  this._propertiesObserver = new PropertyObservers({
+                                      propertyTarget: self,
+                                      propertyValues: self._properties,
+                                      propertyGlobalWatcher(id, v) {
+                                          self.onPropertyChange(id, v)
+                                      }
+                                  })
+                              },
+                              get events() {
+                                  return this._events
+                              }
+                          }
+
+                          //
+                      })
+
+                      var wTry1 = mclass({
+                          expandable: {
+                              _style: true,
+                              _properties: true
+                          },
+                          sources: {
+                              CompBase: CompBase
+                          },
+                          prototype: {
+                              _style: {
+                                  text: 'hithere'
+                              },
+                              _properties: {
+                                  msg: 'hi there'
+                              },
+                              init() {
+                                  wCompBase.prototype.init.apply(this)
+                              }
+                          }
+                      })
+
+                      var c = new wTry1()
+                      c.events.add('onStyleChange', function (id, v) {
+                          alert('style changed here ' + id + ' ' + v)
+                      })
+
+                      c.events.add('onPropertyChange', function (id, v) {
+                          alert('property changed here ' + id + ' ' + v)
+                      })
+
+                      c.text = 'bla'
+                      c.msg = 'new'
+					  //*/
         } catch (err) {
             alert(err)
-			alert(err.stack)
+            alert(err.stack)
         }
-	
-        //*/
+
         alert('done')
     </script>
 </html>

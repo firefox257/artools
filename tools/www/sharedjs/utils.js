@@ -84,25 +84,16 @@ const mclassConstructProxy = {
                 'mclass from all the sources can only have one proxy'
             )
         }
-        ////check needed
-		/*
-        for (var i in target.needed) {
-            if (obj[i] == undefined) {
-                throw new Error(target.needed[i])
-            }
-        }
-		//*/
 
         if (obj.init !== undefined) obj.init(...argumentsList)
 
-		////check needed
+        ////check needed
         for (var i in target.needed) {
             if (obj[i] == undefined) {
                 throw new Error(target.needed[i])
             }
         }
-		
-		
+
         if (proxy !== undefined) {
             var pobj = new Proxy(obj, proxy)
             return pobj
@@ -199,7 +190,7 @@ globalThis.mclass = function (def) {
 //////======
 
 globalThis.deepClone = function (source, visited = new WeakMap()) {
-    if (source === undefined || source==null || typeof source !== 'object') {
+    if (source === undefined || source == null || typeof source !== 'object') {
         return source
     }
 
@@ -385,75 +376,81 @@ globalThis.EventsBus = mclass({
         _calls: {},
         _globals: [],
         init(o) {
-            if (o.eventTarget == undefined) {
+            if (o == undefined) {
                 this._target = this
             } else {
-                this._target = o.eventTarget
-            }
-
-            if (o.eventWatchers !== undefined) {
-                for (var i in o.eventWatchers) {
-                    this.add(i, o.eventWatchers[i])
+                if (o.eventTarget == undefined) {
+                    this._target = this
+                } else {
+                    this._target = o.eventTarget
                 }
-            }
-			
-			if (o.eventDefineWatchers !== undefined) {
-				
-				var a= o.eventDefineWatchers
-				var l = a.length
-				
-                for (var i=0;i<l;i++) {
-                    this.add(a[i])
-                }
-            }
 
-            if (o.eventGlobalWatcher !== undefined) {
-                this.addGlobal(o.eventGlobalWatcher)
-            }
-        },
-        add(id, func) {
-            if (this._calls[id] == undefined) {
-                this._calls[id] = []
-
-                this._target[id] = new Function(
-                    ['calls', 'globals'],
-                    `
-				
-				return function(){
-					var l = calls.length
-					//todo maybe retuen array?
-					for(var i= 0; i< l; i++) {
-						calls[i](...arguments)
-					}
-					
-					l = globals.length
-					//todo maybe retuen array?
-					for(var i= 0; i< l; i++) {
-						globals[i]("${id}",...arguments)
-					}
-					
-				}
-				
-				
-				`
-                )(this._calls[id], this._globals)
-            } //end if
-			
-			if(func!== undefined) {
-				this._calls[id].push(func)
-			}
-        },
-        remove(id, func) {
-            if (this._calls[id] !== undefined) {
-                var a = this._calls[id]
-                var l = a.length
-                for (var i = 0; i < l; i++) {
-                    if (a[i] === func) {
-                        this._calls[id].splice(i, 1)
-                        break
+                if (o.eventWatchers !== undefined) {
+                    for (var i in o.eventWatchers) {
+                        this.add(i, o.eventWatchers[i])
                     }
                 }
-            }
+
+                if (o.eventDefineWatchers !== undefined) {
+                    var a = o.eventDefineWatchers
+                    var l = a.length
+
+                    for (var i = 0; i < l; i++) {
+                        this.add(a[i])
+                    }
+                }
+
+                if (o.eventGlobalWatcher !== undefined) {
+                    this.addGlobal(o.eventGlobalWatcher)
+                }
+            }//end if for o defined
+        },
+        add(ids, func) {
+            if (!Array.isArray(ids)) ids = [ids]
+            var idl = ids.length
+            for (var atid = 0; atid < idl; atid++) {
+                var id = ids[atid]
+                if (this._calls[id] == undefined) {
+                    this._calls[id] = []
+                    this._target[id] = new Function(
+                        ['calls', 'globals'],
+                        `
+					return function(){
+						var l = calls.length
+						//todo maybe retuen array?
+						for(var i= 0; i< l; i++) {
+							calls[i](...arguments)
+						}
+						l = globals.length
+						//todo maybe retuen array?
+						for(var i= 0; i< l; i++) {
+							globals[i]("${id}",...arguments)
+						}
+					}
+					`
+                    )(this._calls[id], this._globals)
+                } //end if
+                if (func !== undefined) {
+                    this._calls[id].push(func)
+                }
+            } //end for id
+        },
+        remove(ids, func) {
+            if (!Array.isArray(ids)) ids = [ids]
+            var idl = ids.length
+            for (var atid = 0; atid < idl; atid++) {
+                var id = ids[atid]
+                if (this._calls[id] !== undefined) {
+                    var a = this._calls[id]
+                    var l = a.length
+                    for (var i = 0; i < l; i++) {
+                        if (a[i] === func) {
+                            this._calls[id].splice(i, 1)
+                            break
+                        }
+                    }
+                }
+            } //end id for
         },
         addGlobal(func) {
             this._globals.push(func)
@@ -491,8 +488,8 @@ globalThis.PropertyObservers = mclass({
             }
 
             for (var i in o.propertyValues) {
-				var prop = o.propertyValues[i] 
-                if (prop !==null && typeof prop == 'object') {
+                var prop = o.propertyValues[i]
+                if (prop !== null && typeof prop == 'object') {
                     throw new Error(
                         'property obsevers do not support objects or arrays. use function replacers.'
                     )
@@ -509,79 +506,81 @@ globalThis.PropertyObservers = mclass({
                 this.addGlobal(o.propertyGlobalWatcher)
             }
         },
-        add(id, func, v) {
+        add(ids, func, v) {
             if (typeof v == 'object') {
                 throw new Error(
                     'property obsevers do not support objects or arrays. use function replacers.'
                 )
             }
+            if (!Array.isArray(ids)) ids = [ids]
+            var idl = ids.length
+            for (var atid = 0; atid < idl; atid++) {
+                var id = ids[atid]
+                if (this._calls[id] == undefined) {
+                    this._calls[id] = []
 
-            if (this._calls[id] == undefined) {
-                this._calls[id] = []
+                    new Function(
+                        ['target', 'properties', 'calls', 'globals'],
+                        `
+						Object.defineProperty(target, "${id}", {
 				
-                new Function(
-                    ['target', 'properties', 'calls', 'globals'],
-                    `
-				Object.defineProperty(target, "${id}", {
-					
-					get() {
-						//todo change
-						if(typeof properties.${id} =="function") {
-							return properties.${id}(properties)
-						}
-						
-						return properties.${id}
-					}, 
-					set(v) {
-						
-						if(typeof properties.${id} =="function") {
-							properties.${id}(properties, v)
-						} else {
-							properties.${id}=v
-						}
-						
-						var l= calls.length
-						
-						for(var i = 0; i < l; i++) {
-							calls[i](v)
-						}
-						l=globals.length
-						for(var i=0;i<l;i++) {
-							globals[i]("${id}",v)
-						}
-					}
-					
-					
-				})
+						get() {
+							//todo change
+							if(typeof properties.${id} =="function") {
+								return properties.${id}(properties)
+							}
+							return properties.${id}
+						}, //end get
+						set(v) {
 				
+							if(typeof properties.${id} =="function") {
+								properties.${id}(properties, v)
+							} else {
+								properties.${id}=v
+							}
 				
+							var l= calls.length
+				
+							for(var i = 0; i < l; i++) {
+								calls[i](v)
+							}
+							l=globals.length
+							for(var i=0;i<l;i++) {
+								globals[i]("${id}",v)
+							}
+						}//end set
+					})
 				`
-                )(
-                    this._target,
-                    this._properties,
-                    this._calls[id],
-                    this._globals
-                )
-            } //end if
-
-            if (func !== undefined) {
-                this._calls[id].push(func)
-            }
-            if (v !== undefined) {
-                this._target = v
-            }
+                    )(
+                        this._target,
+                        this._properties,
+                        this._calls[id],
+                        this._globals
+                    )
+                } //end if
+                if (func !== undefined) {
+                    this._calls[id].push(func)
+                }
+                if (v !== undefined) {
+                    this._target = v
+                }
+            } //end id for
         },
-        remove(id, func) {
-            if (this._calls[id] !== undefined) {
-                var a = this._calls[id]
-                var l = a.length
-                for (var i = 0; i < l; i++) {
-                    if (a[i] === func) {
-                        this._calls[id].splice(i, 1)
-                        break
+        remove(ids, func) {
+            if (!Array.isArray(ids)) ids = [ids]
+            var idl = ids.length
+            for (var atid = 0; atid < idl; atid++) {
+                if (this._calls[id] !== undefined) {
+                    var a = this._calls[id]
+                    var l = a.length
+                    for (var i = 0; i < l; i++) {
+                        if (a[i] === func) {
+                            this._calls[id].splice(i, 1)
+                            break
+                        }
                     }
                 }
-            }
+            } //end id for
         },
         setValues(o) {
             for (var i in o) {
@@ -606,4 +605,3 @@ globalThis.PropertyObservers = mclass({
         }
     }
 })
-

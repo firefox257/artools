@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html>
 <head>
-    <title>Three.js Floor Plan with Grid Lines, Fog, and Lights</title>
+    <title>Three.js Floor Plan with Grid Lines and Fog</title>
     <style>
         body { margin: 0; }
         canvas { display: block; }
@@ -24,11 +24,11 @@
        // camera.lookAt(0, 0, 0); // Make the camera look at the origin
 
         // Set up the renderer
-        const renderer = new THREE.WebGLRenderer({ antialias: true }); // Add antialiasing for smoother edges
+        const renderer = new THREE.WebGLRenderer({ antialias: true }); // Added antialias for smoother edges
         renderer.setSize(window.innerWidth, window.innerHeight);
-        document.body.appendChild(renderer.domElement);
-        renderer.shadowMap.enabled = true; // Enable shadow maps (if using lights that cast shadows)
+        renderer.shadowMap.enabled = true; // Enable shadow mapping
         renderer.shadowMap.type = THREE.PCFSoftShadowMap; // Optional: use softer shadows
+        document.body.appendChild(renderer.domElement);
 
         // Add OrbitControls for interaction
         /*const controls = new OrbitControls(camera, renderer.domElement);
@@ -37,69 +37,47 @@
         controls.screenSpacePanning = false;
         controls.maxPolarAngle = Math.PI / 2; // Limit vertical rotation
 */
-        // --- Add Lighting ---
-
-        // 1. Ambient Light
-        // This light globally illuminates all objects equally.
-        // It doesn't cast shadows and is used to give a base level of brightness.
-        const ambientLight = new THREE.AmbientLight(0x404040, 0.5); // color, intensity
+        // Add ambient light
+        const ambientLight = new THREE.AmbientLight(0x404040, 1); // Soft white light, moderate intensity
         scene.add(ambientLight);
 
-        // 2. Cinematic Lights (using DirectionalLight as a common "cinematic" setup)
-        // DirectionalLight simulates light from a distant source (like the sun).
-        // It casts parallel rays. We'll use three for a basic 3-point lighting feel.
+        // Add a main omni-directional light (like the sun)
+        const mainLight = new THREE.PointLight(0xffffff, 1.5, 100); // White light, higher intensity, casting shadows
+        mainLight.position.set(10, 20, 10); // Position the light
+        mainLight.castShadow = true; // Enable shadow casting
+        // Configure shadow properties for the main light
+        mainLight.shadow.mapSize.width = 1024; // Default is 512
+        mainLight.shadow.mapSize.height = 1024; // Default is 512
+        mainLight.shadow.camera.near = 0.5; // Default is 0.5
+        mainLight.shadow.camera.far = 50; // Default is 500
+        scene.add(mainLight);
 
-        // Key Light (main light source)
-        const keyLight = new THREE.DirectionalLight(0xffffff, 0.8); // color, intensity
-        keyLight.position.set(5, 5, 5);
-        keyLight.castShadow = true; // Enable shadow casting for the key light
-
-        // Configure shadow properties for the key light
-        const shadowCameraSize = 10; // Size of the shadow camera frustum
-        keyLight.shadow.camera.left = -shadowCameraSize;
-        keyLight.shadow.camera.right = shadowCameraSize;
-        keyLight.shadow.camera.top = shadowCameraSize;
-        keyLight.shadow.camera.bottom = -shadowCameraSize;
-        keyLight.shadow.camera.near = 0.5;
-        keyLight.shadow.camera.far = 50;
-        keyLight.shadow.mapSize.width = 1024; // Shadow map resolution
-        keyLight.shadow.mapSize.height = 1024;
-
-        scene.add(keyLight);
-
-        // Fill Light (softens shadows created by the key light)
-        const fillLight = new THREE.DirectionalLight(0xffffff, 0.4); // color, intensity
-        fillLight.position.set(-5, 5, -5); // Opposite side of the key light
+        // Add a secondary omni-directional light for softer fill (optional)
+        const fillLight = new THREE.PointLight(0xa0a0a0, 0.5, 50); // Slightly grey light, lower intensity
+        fillLight.position.set(-5, 10, -5); // Position the light
         scene.add(fillLight);
-
-        // Back Light (rim light - separates the subject from the background)
-        const backLight = new THREE.DirectionalLight(0xffffff, 0.3); // color, intensity
-        backLight.position.set(0, 5, -5); // Behind the camera/subject
-        scene.add(backLight);
-
-        // --- End Lighting ---
 
 
         // Create the floor plane
         const floorGeometry = new THREE.PlaneGeometry(40, 40, 10, 10); // Large plane, 100x100 units
-        // Use a material that reacts to light
-        const floorMaterial = new THREE.MeshStandardMaterial({ color: 0x808080, side: THREE.DoubleSide }); // Grey material
+        const floorMaterial = new THREE.MeshStandardMaterial({ color: 0x808080, side: THREE.DoubleSide }); // Use MeshStandardMaterial for lighting effects
         const floor = new THREE.Mesh(floorGeometry, floorMaterial);
         floor.rotation.x = Math.PI / 2; // Rotate the plane to be horizontal
         floor.receiveShadow = true; // Allow the floor to receive shadows
         scene.add(floor);
 
         // Create the grid of lines (horizontal plus signs)
-        // For lines, MeshBasicMaterial or LineBasicMaterial is usually sufficient as they don't react to light in the same way.
-        const lineMaterial = new THREE.LineBasicMaterial({ color: 0xb0b0b0 }); // Black lines
+        // Use a material that is not affected by lighting if you want the lines to remain consistently visible
+        const lineMaterial = new THREE.LineBasicMaterial({ color: 0xb0b0b0 }); // Grey lines
+
         const halfLineLength = 0.1; // Half the length of each segment of the plus
 
         const gridSize = 40; // The size of the grid area (should match floor size)
         const gridSpacing = 1; // Spacing between plus signs
-        const numberOfItems = (gridSize / gridSpacing); // Number of plus signs along each axis (adjusted for positioning)
+        const numberOfItems = (gridSize / gridSpacing); // Number of plus signs along each axis, adjusted for centering
 
-        for (let i = 0; i < numberOfItems; i++) {
-            for (let j = 0; j < numberOfItems; j++) {
+        for (let i = 0; i <= numberOfItems; i++) {
+            for (let j = 0; j <= numberOfItems; j++) {
                 // Create a geometry for the horizontal plus sign
                 const points = [];
                 // Horizontal segment (along x-axis)
@@ -115,11 +93,11 @@
                 const plusSign = new THREE.LineSegments(lineGeometry, lineMaterial);
 
                 // Calculate position based on grid, centering the grid on the floor
-                // Adjust position calculation to center the grid of items correctly
-                const x = (i - numberOfItems / 2 + 0.5) * gridSpacing;
-                const z = (j - numberOfItems / 2 + 0.5) * gridSpacing;
+                // Adjusting position calculation for grid lines to align with grid spacing
+                const x = (i - numberOfItems / 2) * gridSpacing;
+                const z = (j - numberOfItems / 2) * gridSpacing;
 
-                plusSign.position.set(x, 0.01, z); // Position slightly above the floor
+                plusSign.position.set(x, 0.05, z); // Position slightly above the floor
                 scene.add(plusSign);
             }
         }

@@ -1,3 +1,9 @@
+
+//////////////
+globalThis.defineProp = Object.defineProperty
+
+
+
 globalThis.getAllKeys = function (source, ignore) {
     var stringKeys = Object.getOwnPropertyNames(source)
     var symbolKeys = Object.getOwnPropertySymbols(source)
@@ -65,7 +71,9 @@ globalThis.expandObject = function (traget, source) {
 /////mclass
 const mclassConstructProxy = {
     construct(target, argumentsList, newTarget) {
-        var obj = deepClone(target.prototype) //new target()
+        var obj = new target()
+		//unoptimized set function refs which takes mor memory
+		//deepClone(target.prototype) //new target()
         var proxy
 
         if (target.sources !== undefined) {
@@ -138,7 +146,7 @@ globalThis.mclass = function (def) {
 
                 if (expandable[key]) funce[key] = true
                 else funce[key] = false
-            }
+            }//end for loop
 
             deepSet(allKeys, dc.prototype, source.prototype, expandable)
 
@@ -147,7 +155,11 @@ globalThis.mclass = function (def) {
                     needed[i] = source.needed[i]
                 }
             }
-        }
+			
+			if(source.templates !== undefined) {
+				source.templates(dc.prototype)
+			}
+        }//end source for loop
     }
 
     {
@@ -173,6 +185,10 @@ globalThis.mclass = function (def) {
             //check overrides
             deepSet(allKeys, dc, def)
         }
+		
+		if(def.templates !== undefined) {
+			def.templates(dc.prototype)
+		}
 
         if (def.needed != undefined) {
             for (var i in def.needed) {
@@ -185,6 +201,7 @@ globalThis.mclass = function (def) {
 
     return new Proxy(dc, mclassConstructProxy)
 }
+
 
 //////mclass end
 //////======
@@ -253,6 +270,7 @@ globalThis.deepClone = function (source, visited = new WeakMap()) {
 
 ///////////
 
+/*
 globalThis.Msgc = function () {
     var calls = {}
     function o(id, ...args) {
@@ -330,6 +348,60 @@ globalThis.Msgc = function () {
 }
 
 globalThis.$msgc = Msgc()
+//*/
+
+globalThis.Msgc = mclass({
+	prototype: {
+		init() {
+			
+		},
+		add(name, func) {
+			var call = ["_", name, "Calls"].join('')
+			var self = this
+			if(self[call] == undefined) {
+				new Function(["self"], `
+				self._${name}Calls = []
+				self.${name} = function() {
+					var a = this._${name}Calls
+					var l = a.length
+					for(var i = 0; i<l;i++) {
+						a[i](...arguments)
+					}
+				}
+			`)(self)
+			}
+			self[call].push(func)
+	
+		},
+		remove(name, func) {
+			var call = ["_", name, "Calls"].join('')
+			if(this[call]!==undefined && func!== undefined) {
+				var a = this[call]
+				var l = a.length
+				for (var i = 0; i < l; i++) {
+					if (a[i] === func) {
+						a[id].splice(i, 1)
+						break
+					}
+				}
+			} else {
+				this[name]=undefined
+			}
+		},
+		set(name, func) {
+			var self = this
+			var call = ["_", name, "Calls"].join('')
+			if(self[call] !== undefined) {
+				self[call]=undefined
+			}
+			self[name]=func
+		}
+	}
+})
+
+
+
+
 
 function funcrtID() {
     return funcrtID.atid++
@@ -474,6 +546,7 @@ globalThis.PropertyObservers = mclass({
         _calls: {},
         _properties: undefined,
         _globals: [],
+		_events:undefined,
         init(o) {
             if (o.propertyValues !== undefined) {
                 this._properties = o.propertyValues
@@ -496,7 +569,8 @@ globalThis.PropertyObservers = mclass({
                 }
                 this.add(i)
             }
-
+			
+			/*
             if (o.propertyWatchers !== undefined) {
                 for (var i in o.propertyWatchers) {
                     this.add(i, o.propertyWatchers[i])
@@ -504,7 +578,7 @@ globalThis.PropertyObservers = mclass({
             }
             if (o.propertyGlobalWatcher !== undefined) {
                 this.addGlobal(o.propertyGlobalWatcher)
-            }
+            }*/
         },
         add(ids, func, v) {
             if (typeof v == 'object') {
@@ -540,7 +614,8 @@ globalThis.PropertyObservers = mclass({
 							}
 				
 							var l= calls.length
-				
+							
+							
 							for(var i = 0; i < l; i++) {
 								calls[i](v)
 							}
@@ -548,6 +623,10 @@ globalThis.PropertyObservers = mclass({
 							for(var i=0;i<l;i++) {
 								globals[i]("${id}",v)
 							}
+							//*/
+							
+							
+							
 						}//end set
 					})
 				`
@@ -605,3 +684,113 @@ globalThis.PropertyObservers = mclass({
         }
     }
 })
+
+
+globalThis.props = function(p, o) {
+	
+	var v = o.values
+	var e = o.events
+	
+	for(var i in e) {
+		p["_"+i+"Calls"]=[]
+		new Function(["p"],`
+		
+		p.${i} = function() {
+			var a= this._${i}Calls
+			var l= a.length
+			for(var i= 0;i<l;i++) {
+				a[i](...arguments)
+			}
+			
+		}
+		
+		p.${i}Add = function(func) {
+			this._${i}Calls.push(func)
+		}
+		
+		
+		`)(p)
+	}
+	
+	for(var i in v) {
+		var vv=v[i]
+		
+		
+		if(typeof vv !== "function") {
+			
+			p['_'+i]= vv
+			
+			var eventcalls=[]
+			
+			for(var ii in e) {
+				eventcalls.push(`this.${ii}(this)`)
+			}
+			
+			new Function(["p"], `
+			
+			defineProp(p, "${i}", {
+				get() {
+					return this._${i}
+				},
+				set(v) {
+					this._${i} = v
+					${eventcalls.join("\r\n")}
+				}
+			})
+			`)(p)
+			
+		} else {//end if
+		
+			p['_'+i]= vv
+			var eventcalls=[]
+			
+			for(var ii in e) {
+				eventcalls.push(`this.${ii}(this)`)
+			}
+			
+			new Function(["p"], `
+			
+				defineProp(p, "${i}", {
+					get() {
+						return this._${i}()
+					},
+					set(v) {
+						this._${i}(this, v)
+						${eventcalls.join("\r\n")}
+					}
+				})
+			`)(p)
+		//*/
+		}
+		
+		
+		
+	}
+	//*/
+}
+
+
+globalThis.eventBus=function(p, o) {
+	
+	
+	for(var i in o) {
+		
+		new Function(["p","i"], `
+		
+		p._${i}Calls=[]
+		p.${i}=function() {
+			var a=this._${i}Calls
+			var l=a.length
+			for(var ii= 0;ii<l;ii++) {
+				a[ii](...arguments)
+			}
+			
+		}
+		p.${i}Add=function(func) {
+			p._${i}Calls.push(func)
+		}
+		
+		`)(p,i)
+	}
+	
+}

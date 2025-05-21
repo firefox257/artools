@@ -32,3 +32,6 @@ console.log(proxy.greet()) // Output: Getting property "greet" on receiver Proxy
 
 console.log(inheritingObj.name) // Output: Getting property "name" on receiver { name: 'Inheritor' } \n Inheritor
 console.log(inheritingObj.greet()) // Output: Getting property "greet" on receiver { name: 'Inheritor' } \n Hello, Inheritor!
+
+
+

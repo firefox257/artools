@@ -19,6 +19,9 @@
 				display: inline-block;
 				
 			}
+			canvas {
+				border: 1px solid #0f0
+			}
         </style>
     </head>
     <script type="importmap">
@@ -41,8 +44,291 @@
         import 'globals'
         import 'sharedUtils'
         import { mm2px, px2mm } from 'ux'
+		
+		globalThis.$m=new Msgc()
+		
+		
         try {
+			
+			globalThis.$m=new Msgc()
+			
+			window.addEventListener('resize', () => {
+				//camera.aspect = window.innerWidth / window.innerHeight;
+				//camera.updateProjectionMatrix();
+				//renderer.setSize(window.innerWidth, window.innerHeight);
+				$m.onResize()
+			});
+			
+	
             
+			const WorldView = mclass({
+				templates(p){
+					props(p, {
+						values:{
+							width:null,
+							height:null,
+							size(p,v){
+								
+								if(v==undefined){
+									return [p._width,p._height]
+								}
+								p._width=v[0]
+								p._height=v[1]
+							}
+						},//end values
+						events:{
+							onSizeChange:true
+						}
+						
+					})//end size props
+					props(p, {
+						
+						values:{
+							camFov:75,
+							camNear:0.1,
+							camFar:1000,
+							camAspect:null,
+						},
+						events:{
+							onCamChange:true
+						}
+						
+					})//end camera props
+					
+					props(p, {
+						values:{
+							camX(p, v) {
+								if(v==undefined) {
+									return p._camera.position.x
+								}
+								p._camera.position.x=v
+							},
+							camY(p, v) {
+								if(v==undefined) {
+									return p._camera.position.y
+								}
+								p._camera.position.y=v
+							},
+							camZ(p, v) {
+								if(v==undefined) {
+									return p._camera.position.z
+								}
+								p._camera.position.z=v
+							},
+							camXYZ(p, v) {
+								var pos=p._camera.position
+								if(v==undefined) {
+									return [pos.x,pos.y,pos.z]
+								}
+								pos.set(...v)
+							},
+							
+							camRX(p, v) {
+								if(v==undefined) {
+									return p._camera.rotation.x
+								}
+								p._camera.rotation.x=v
+							},
+							camRY(p, v) {
+								if(v==undefined) {
+									return p._camera.rotation.y
+								}
+								p._camera.rotation.y=v
+							},
+							camRZ(p, v) {
+								if(v==undefined) {
+									return p._camera.rotation.z
+								}
+								p._camera.rotation.z=v
+							},
+							camRXYZ(p, v) {
+								var pos=p._camera.rotation
+								if(v==undefined) {
+									return [pos.x,pos.y,pos.z]
+								}
+								pos.set(...v)
+							}
+						},
+						events:{
+							onCamPosChange:true
+							
+						}
+						
+					})
+				},
+				prototype:{
+					_dom:undefined,
+					_renderer:undefined,
+					_canvas:undefined,
+					_ctx:undefined,
+					_camera:undefined,
+					_world:undefined,
+					init(canvasName) {
+						
+						this._dom=$q(`*[worldview="${canvasName}"]`)
+						this._width=this._dom.clientWidth
+						this._height=this._dom.clientHeight
+						
+						this._renderer=new THREE.WebGLRenderer({ antialias: true });
+						this._renderer.shadowMap.enabled = true; // Enable shadow maps (if using lights that cast shadows)
+						this._renderer.shadowMap.type = THREE.PCFSoftShadowMap; // Optional: use softer shadows
+						this._renderer.setSize(window.innerWidth, window.innerHeight);
+						this._canvas=this._renderer.domElement
+						this._dom.appendChild(this._canvas)
+						
+						
+						this._camAspect=this._width/this._height
+						this._camera = new THREE.PerspectiveCamera(this._camFov, this._camAspect, this._camNear, this.camFar);
+						//this._camera.position.set(this._camX, this.camY, this.camZ); // Position the camera
+						
+						this._camY=1.7
+						
+						this._initMsgc()
+						this._initEvents()
+						
+					},
+					
+					_initMsgc() {
+						var self= this
+						$m.add("onResize",()=>{
+							
+							var w=self._dom.clientWidth
+							var h=self._dom.clientHeight
+							this.size=[w,h]
+						})
+						
+						$m.add("worldViewSetWorld",(worldName)=>{
+						})
+					},
+					
+					_initEvents(){
+						var self= this
+						self.onSizeChangeAdd((at)=>{
+							self._renderer.setSize(this._width, this._height)
+							self._camAspect=this._width/this._height
+							
+						})
+					}
+					
+					
+				}//end prototype
+				
+			})
+			
+			
+			const World = mclass({
+				
+				prototype:{
+					_scene:undefined,
+					init(){
+						this._scene = new THREE.Scene();
+					},
+					_initMsgc(){
+						
+					}
+					
+				}
+				
+			})
+			
+			
+			{
+				var worldview={}
+				
+				$m.add("worldViewAdd", (name)=>{
+					worldview[name]=new WorldView(name)
+				})
+				
+			}
+			
+			
+			
+			$m.worldViewAdd("main")
+			
+			//*/
+			
+			
+			
+			/*
+			var WorldView= mclass({
+				override: {
+					initCanvas:true
+				},
+				templates:(p) => {
+					props(p, {
+						values:{
+							width:null,
+							height:null,
+							size(p, v){
+								if(v==undefined) {
+									return [p.width, p.height]
+								}
+								p.width=v[0]
+								p.height=[1]
+							}
+							
+						},
+						events: {
+							onSizeChange:true
+							onPropChange:true
+						}
+						
+					}//end props
+					
+					
+					
+					
+				},
+                prototype: {
+                    _currentWorld: null,
+                    _worlds: {},
+                    _renderer: undefined,
+					_camera: undefined,
+					
+					
+					_properties:{
+						width:null,
+						height:null,
+						size(p,v){
+							
+						}, 
+						camFov:75,//from quest 3
+					},
+                    init() {
+						
+						
+						var self= this
+						this._propObserv=new PropertyObservers({
+							propertyTarget: self,
+							propertyValues: self._properties,
+						})
+						this._propObserv.add(["width","height","size"],()=>{
+							self._updateCamera()
+						})
+						
+						//var size = $msgc("setup 3d canvas", c)
+						//renderer.setSize(...size);
+						
+						
+                    },
+					
+					initCanvas(size){
+						this._renderer =new THREE.WebGLRenderer({ antialias: true })
+						this._renderer.setSize(...size)
+						this._renderer.shadowMap.enabled = true; // Enable shadow maps (if using lights that cast shadows)
+        				this._renderer.shadowMap.type = THREE.PCFSoftShadowMap; // Optional: use softer shadows
+		
+						this._properties.width=size[0]
+						this._properties.height=size[1]
+						return this._renderer.domElement
+					},
+					_updateCamera(){
+						
+					}
+					
+                } //end prototype
+            })
+			
 			globalThis.globalEvents=new EventsBus()
 			
 			{
@@ -112,65 +398,26 @@
 				var dom=$qa("*[worldview]");
 				var l= dom.length
 				for(var i= 0; i< l; i++) {
-					var name = dom[i].getAttribute("worldview")
-					library[name]=dom[i]
+					var d =dom[i]
+					var name = d.getAttribute("worldview")
+					library[name]=d
+					
+					//alert(d.clientHeight)
+					var w= new WorldView()
+					var c=w.initCanvas([d.clientWidth, d.clientHeight])
+					
+					d.appendChild(c)
+					
+					$msgc("WorldViewLib set worldview", name, w)
 				}
 				
 			}
 			
 			
 			
-			var WorldView= mclass({
-				override: {
-					initCanvas:true
-				},
-                prototype: {
-                    _currentWorld: null,
-                    _worlds: {},
-                    _renderer: new THREE.WebGLRenderer(),
-					_camera: undefined,
-					_propObserv:undefined,
-					get properties() {
-						return this._propOnserv
-					},
-					_properties:{
-						width:null,
-						height:null,
-						size(p,v){
-							
-						}, 
-						camFov:75,//from quest 3
-					},
-                    init() {
-						
-						
-						var self= this
-						this._propObserv=new PropertyObservers({
-							propertyTarget: self,
-							propertyValues: self._properties,
-						})
-						this.properties.add(["width","height","size"],()=>{
-							self._updateCamera()
-						})
-						
-						//var size = $msgc("setup 3d canvas", c)
-						//renderer.setSize(...size);
-						
-						
-                    },
-					
-					initCanvas(size){
-						this._renderer.setSize(...size);
-						
-					},
-					_updateCamera(){
-						
-					}
-					
-                } //end prototype
-            })
 			
-			/*
+			
+			
 			
 			
 			const World = mclass({
@@ -209,11 +456,11 @@
 						var self= this
 						this._propObserv.add(["fogColor","fogNear","fogFar","fog"],
 						()=>{
-							self._setUpFog()
+							self._setUpFog()()
 						})
 						this._propObserv.add("backgroundColor",
 						()=>{
-							self._setUpBackground
+							self._setUpBackground()
 						})
 					},
                     _setUpFog() {

@@ -1,0 +1,63 @@
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+    <title>Canvas Multi-line Input</title>
+    <style>
+        body {
+            font-family: sans-serif;
+            margin: 0;
+            padding: 20px;
+            background-color: #f0f0f0;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+        #canvasInputContainer {
+            position: relative; /* For positioning the hidden textarea */
+            width: 300px;
+            height: 150px;
+            border: 1px solid #ccc;
+            background-color: #fff;
+            cursor: text; /* Indicate it's a text input area */
+            overflow: hidden; /* Clip content to canvas bounds */
+        }
+        canvas {
+            display: block;
+        }
+        /* Hidden textarea for native input handling */
+        .hidden-textarea {
+            position: absolute;
+            left: -9999px;
+            top: -9999px;
+            width: 1px; /* Small size */
+            height: 1px;
+            opacity: 0; /* Completely transparent */
+            resize: none;
+            overflow: hidden;
+            /* Crucial for maintaining selection and cursor position correctly with native input */
+            white-space: pre-wrap;
+            word-wrap: break-word; /* Though canvas handles wrapping, this helps textarea behave */
+        }
+    </style>
+</head>
+<body>
+    <h1>Canvas Multi-line Input</h1>
+    <p>Tap or click in the box below to start typing.</p>
+    <div id="canvasInputContainer">
+        <canvas id="textCanvas"></canvas>
+    </div>
+
+    <script src="canvasInput.js"></script>
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            const canvas = document.getElementById('textCanvas');
+            const container = document.getElementById('canvasInputContainer');
+            new CanvasMultilineInput(container, canvas);
+        });
+    </script>
+</body>
+</html>
+

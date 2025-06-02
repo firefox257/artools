@@ -435,7 +435,6 @@
                 }
 
                 drawCanvasContent() { // Overrides base method
-                    console.log("drawCanvas")
                     if (!this.canvas) return;
                     const ctx = this.canvas.getContext('2d');
                     if (!ctx) return;
@@ -890,10 +889,42 @@
 
                     this.renderer.xr.addEventListener('sessionstart', async () => {
                         console.log('XR session started');
-                        // this.originalSceneBackground is already stored
-                        this.scene.background = null;
-                        if (this.controls) this.controls.enabled = false;
-                        // FloorTest._onSessionStart is called automatically by its own event listener
+                        const session = this.renderer.xr.getSession();
+                        if (session) {
+                            // Set scene background for AR
+                            this.scene.background = null;
+                            // Disable OrbitControls during AR session
+                            if (this.controls) this.controls.enabled = false;
+
+                            // Attempt to set a higher frame rate if supported
+                            if (session.supportedFrameRates && session.updateTargetFrameRate) {
+                                console.log("Device supported frame rates:", session.supportedFrameRates);
+                                const desiredMinimumFrameRate = 70;
+                                // Find the lowest supported frame rate that is > desiredMinimumFrameRate
+                                const suitableRates = session.supportedFrameRates
+                                    .filter(rate => rate > desiredMinimumFrameRate)
+                                    .sort((a, b) => a - b); // Sort ascending to pick the lowest suitable
+
+                                if (suitableRates.length > 0) {
+                                    const targetRate = suitableRates[0]; // Pick the smallest rate > 70
+                                    try {
+                                        await session.updateTargetFrameRate(targetRate);
+                                        console.log(`Successfully requested target frame rate: ${targetRate}Hz`);
+                                    } catch (error) {
+                                        console.error(`Failed to set target frame rate to ${targetRate}Hz:`, error);
+                                    }
+                                } else {
+                                    console.log(`No supported frame rate found strictly greater than ${desiredMinimumFrameRate}Hz.`);
+                                    if (session.supportedFrameRates.length > 0) {
+                                        const maxSupported = Math.max(...session.supportedFrameRates);
+                                        console.log(`Highest available frame rate is: ${maxSupported}Hz.`);
+                                    }
+                                }
+                            } else {
+                                console.log("XRSession does not support querying/updating frame rates on this device/browser.");
+                            }
+                            // FloorTest._onSessionStart is called automatically by its own event listener
+                        }
                     });
 
                     this.renderer.xr.addEventListener('sessionend', () => {

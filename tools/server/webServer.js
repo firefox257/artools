@@ -245,7 +245,7 @@ function write(req, res, code, msg) {
 
 const defaultOptions = {
     port: 80,
-    sslpoet: 443,
+    sslport: 443,
     key: './server/key.pem',
     cert: './server/cert.pem',
     additionalMethods: []

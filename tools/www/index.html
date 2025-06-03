@@ -655,6 +655,7 @@
                                     this.floorDetected = true; // Floor is now detected
                                     this.reticle.visible = false; // Hide reticle after detection
                                     console.log("FloorTest: Floor detected and offset applied. Reticle hidden.");
+                                    $msgc("ar floor detected", this.floorOffset);
                                 }
                             }
                         } else {
@@ -1053,16 +1054,25 @@
                 }
             }
 
-            setTimeout(() => {
+            $msgc.add("ar floor detected", (floorOffsetValue) => {
+                console.log(`AR Floor Detected event received, offset: ${floorOffsetValue}`);
                 if (myTextQuad) {
                     myTextQuad.props = {
-                        text: "Floor Detected!",
+                        text: "Floor Aligned!", // Updated text for clarity
                         textColor: '#00FF00',
                         emissiveColor: '#00FF00',
                         emissiveIntensity: 0.6
                     };
                 }
-            }, 7000);
+                $msgc("get hittest", (x, y, z)=>{
+                    myTextQuad.props = {
+                        text:  x + " " + y + " " + z, // Updated text for clarity
+                        textColor: '#00FF00',
+                        emissiveColor: '#00FF00',
+                        emissiveIntensity: 0.6
+                    };
+                });
+            });
             // --- End of externally managed scene objects initialization ---
 
 
